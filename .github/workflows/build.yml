@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   build:
@@ -61,8 +62,33 @@ jobs:
           files: lost-luggage-${{ github.run_number }}.apk
           make_latest: true
 
-      - name: Publish build log
+      - name: Post build log to issue
         if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          touch build.log
+          {
+            echo "outcome=${{ steps.build.outcome }} run=${{ github.run_number }} sha=${{ github.sha }}"
+            echo
+            echo '```'
+            grep -nE "error|Error:|FAILURE|What went wrong|Exception|Try:" build.log | head -120 || true
+            echo "---- tail"
+            tail -80 build.log
+            echo '```'
+          } > body.md
+          head -c 60000 body.md > body2.md
+          num=$(gh issue list --repo "$REPO" --state all --search "Лог сборки in:title" --json number --jq '.[0].number // empty')
+          if [ -z "$num" ]; then
+            gh issue create --repo "$REPO" --title "Лог сборки" --body-file body2.md
+          else
+            gh issue comment "$num" --repo "$REPO" --body-file body2.md
+          fi
+
+      - name: Publish build log branch
+        if: always()
+        continue-on-error: true
         run: |
           mkdir -p /tmp/cilog
           cp build.log /tmp/cilog/ 2>/dev/null || echo "no log" > /tmp/cilog/build.log

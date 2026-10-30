@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1B3358"/>
+      <stop offset="1" stop-color="#0E1B30"/>
+    </linearGradient>
+    <linearGradient id="case" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F2B53A"/>
+      <stop offset="1" stop-color="#D8901A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.42" r="0.55">
+      <stop offset="0" stop-color="#3A5F93" stop-opacity=".55"/>
+      <stop offset="1" stop-color="#3A5F93" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="230" fill="url(#glow)"/>
+  <!-- handle -->
+  <rect x="402" y="232" width="220" height="120" rx="44" fill="none" stroke="#9E6812" stroke-width="40"/>
+  <!-- suitcase body -->
+  <rect x="222" y="318" width="580" height="440" rx="70" fill="url(#case)"/>
+  <rect x="222" y="318" width="580" height="440" rx="70" fill="none" stroke="#9E6812" stroke-width="14" opacity=".55"/>
+  <!-- straps -->
+  <rect x="338" y="318" width="38" height="440" fill="#B3770F" opacity=".75"/>
+  <rect x="648" y="318" width="38" height="440" fill="#B3770F" opacity=".75"/>
+  <!-- wheels -->
+  <circle cx="320" cy="790" r="34" fill="#0A1424" stroke="#6B7A90" stroke-width="10"/>
+  <circle cx="704" cy="790" r="34" fill="#0A1424" stroke="#6B7A90" stroke-width="10"/>
+  <!-- tag string -->
+  <path d="M560 360 C 610 420, 640 450, 690 470" fill="none" stroke="#F4F1EA" stroke-width="10" stroke-linecap="round"/>
+  <!-- luggage tag -->
+  <g transform="rotate(-14 760 560)">
+    <rect x="640" y="440" width="220" height="250" rx="34" fill="#F4F1EA"/>
+    <circle cx="750" cy="482" r="16" fill="#1B3358"/>
+    <text x="750" y="650" text-anchor="middle" font-family="Inter Display, Inter, DejaVu Sans, sans-serif" font-weight="900" font-size="170" fill="#1B3358">?</text>
+  </g>
+</svg>

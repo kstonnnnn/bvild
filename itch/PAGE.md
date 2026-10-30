@@ -8,20 +8,17 @@ Everything below is ready to paste into the itch.io project editor.
 - **Project URL:** `lost-luggage`
 - **Short description / tagline:** Bid blind on unclaimed airport luggage, unpack it, and flip the finds before rent is due.
 - **Classification:** Games
-- **Kind of project:** HTML (playable in the browser). Also upload the Android `.apk` as a downloadable file.
+- **Kind of project:** Downloadable (Android APK)
 - **Release status:** In development (switch to Released when you are happy with it)
 - **Pricing:** No payments, or "$0 or donate"
 - **Genre:** Simulation
 - **Tags (up to 10):** tycoon, management, economy, trading, auction, casual, singleplayer, mobile, touch-friendly, short
 - **AI generation disclosure:** set this according to how you built the game (itch asks about AI-generated content in the project settings).
 
-## Embed options (Uploads section)
+## Uploads
 
-- Upload `lost-luggage-web-N.zip` from the latest GitHub release and tick **This file will be played in the browser**.
-- **Viewport:** 420 × 860
-- Tick **Mobile friendly**, orientation **Portrait**
-- Tick **Fullscreen button**
-- Upload `lost-luggage-N.apk` as a second file, platform **Android**.
+- Upload `lost-luggage-N.apk` from the latest GitHub release and tick the **Android** platform icon next to it.
+- Rename the upload's display name to something like `Lost Luggage 1.2 (Android)`.
 
 ## Images
 
@@ -79,7 +76,7 @@ Lost Luggage is a short-session trading sim about bidding on unclaimed suitcases
 
 **Goal:** reach a net worth of $100,000. Then keep going.
 
-Plays in the browser on desktop and mobile. Android APK available below.
+Android only for now. Download the APK below, allow installs from unknown sources, and you're set. Updates install over the old version and keep your progress.
 
 ---
 
@@ -89,7 +86,7 @@ Plays in the browser on desktop and mobile. Android APK available below.
 
 **Body:**
 
-Lost Luggage is now playable in the browser and on Android.
+Lost Luggage is out on Android.
 
 It's a small trading sim: bid on unclaimed airport luggage, unpack it, check what's real, and flip it. This first release has 60+ items, four rival bidders, overnight sales, story events, upgrades, and a collection book.
 
@@ -104,4 +101,4 @@ Once the itch project exists, every push to `main` can upload the new build auto
    - **Secret** `BUTLER_API_KEY` = the key
    - **Variable** `ITCH_GAME` = `yourname/lost-luggage`
    - **Variable** `ITCH_URL` = `https://yourname.itch.io/lost-luggage` (adds a link to the page inside the game's Settings)
-3. The build pushes two channels: `android` (the APK) and `web` (the browser build). In the itch uploads list, mark the `web` channel as **played in the browser**.
+3. The build pushes the APK to the `android` channel. It also pushes a `web` channel; you can ignore it or delete it from the uploads list.

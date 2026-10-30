@@ -30,6 +30,9 @@ class MarketTab extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+            const TipCard('market',
+                'Совет: цена на 10–30% выше оценки обычно продаётся за пару ночей. Если покупатель предлагает меньше, решай до конца дня — потом предложение сгорит.'),
             if (game.offers.isNotEmpty) ...[
               const SectionTitle('Предложения покупателей'),
               for (final o in game.offers) _OfferCard(offer: o),

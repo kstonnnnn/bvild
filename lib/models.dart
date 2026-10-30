@@ -80,6 +80,7 @@ class Lot {
   final List<Item> items;
   final int start;
   bool xray;
+  bool training;
 
   /// open, won, stored, lost, unsold
   String status;
@@ -96,6 +97,7 @@ class Lot {
     required this.items,
     required this.start,
     this.xray = false,
+    this.training = false,
     this.status = 'open',
     this.finalPrice,
     this.winner,
@@ -116,6 +118,7 @@ class Lot {
         'i': items.map((e) => e.toJson()).toList(),
         's': start,
         'x': xray,
+        'tr': training,
         'st': status,
         'fp': finalPrice,
         'win': winner,
@@ -134,6 +137,7 @@ class Lot {
             .toList(),
         start: (j['s'] as num).toInt(),
         xray: j['x'] == true,
+        training: j['tr'] == true,
         status: j['st'] as String,
         finalPrice: j['fp'] == null ? null : (j['fp'] as num).toInt(),
         winner: j['win'] as String?,

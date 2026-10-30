@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data.dart';
 import 'models.dart';
+import 'settings.dart';
 
 final Random rng = Random();
 final GameState game = GameState();
@@ -67,6 +68,7 @@ class GameState extends ChangeNotifier {
   int bestFind = 0;
   String bestFindName = '';
   bool tutorialSeen = false;
+  List<int> capitalHistory = [];
 
   // Per-day modifiers, not saved.
   double quickRate = 0.5;
@@ -81,7 +83,7 @@ class GameState extends ChangeNotifier {
 
   bool has(String u) => upgrades.contains(u);
   int get capacity => 20 + (has('storage1') ? 15 : 0) + (has('storage2') ? 25 : 0);
-  int get rent => 300 + capacity * 15;
+  int get rent => ((300 + capacity * 15) * settings.rentMult).round();
   int get inventoryValue => items.fold<int>(0, (s, i) => s + i.estimate);
   int get capital => money + inventoryValue;
   int get xrayCost => has('xray') ? 0 : 1500;
@@ -204,7 +206,8 @@ class GameState extends ChangeNotifier {
 
   // ---------------------------------------------------------------- auction
 
-  List<BidderDef> attendees() {
+  List<BidderDef> attendees(Lot lot) {
+    if (lot.training) return [bidderById('gena')];
     final pool = bidders.where((b) => !absent.contains(b.id)).toList()..shuffle(rng);
     final n = min(pool.length, rint(2, 3));
     return pool.take(n).toList();
@@ -213,8 +216,14 @@ class GameState extends ChangeNotifier {
   Map<String, int> bidderMaxes(Lot lot, List<BidderDef> who) {
     final nominal = lot.nominal;
     final res = <String, int>{};
+    if (lot.training) {
+      for (final b in who) {
+        res[b.id] = lot.start + 400;
+      }
+      return res;
+    }
     for (final b in who) {
-      var v = nominal * rd(0.5, 1.1) * b.mult;
+      var v = nominal * rd(0.5, 1.1) * b.mult * settings.botMult;
       if (b.specials.isNotEmpty) {
         final sv = lot.items.where((i) => b.specials.contains(i.def.cat)).fold<int>(0, (s, i) => s + i.value);
         if (sv > nominal * 0.3) v *= 1.25;
@@ -429,7 +438,7 @@ class GameState extends ChangeNotifier {
     for (final c in List<Complaint>.from(complaints)) {
       if (c.due <= day + 1) {
         complaints.remove(c);
-        if (rng.nextDouble() < 0.65) {
+        if (rng.nextDouble() < settings.complaintChance) {
           final it = Item.fromJson(c.item);
           it.appraised = true;
           money -= c.price;
@@ -441,6 +450,8 @@ class GameState extends ChangeNotifier {
       }
     }
 
+    capitalHistory.add(capital);
+    if (capitalHistory.length > 365) capitalHistory.removeAt(0);
     if (reputation > 50) reputation--;
     if (reputation < 50 && rng.nextBool()) reputation++;
 
@@ -558,7 +569,8 @@ class GameState extends ChangeNotifier {
 
   void newGame() {
     day = 1;
-    money = 30000;
+    money = settings.startMoney;
+    capitalHistory = [];
     reputation = 50;
     lots = [];
     items = [];
@@ -574,7 +586,52 @@ class GameState extends ChangeNotifier {
     bestFind = 0;
     bestFindName = '';
     startDay();
+    lots[0] = _trainingLot();
     event = null;
+  }
+
+  Lot _trainingLot() {
+    Item mk(String id, int v) => Item(uid: nextUid(), defId: id, value: v);
+    return Lot(
+      id: nextUid(),
+      kindId: 'backpack',
+      origin: 'Москва',
+      code: 'SVO',
+      weight: 4.2,
+      tags: const ['Учебный лот'],
+      items: [mk('hoodie', 1200), mk('thermos', 800), mk('console', 14000), mk('magazine', 20)],
+      start: 300,
+      training: true,
+    );
+  }
+
+  /// Sells every junk item to the dealer. Returns (count, sum).
+  List<int> sellAllJunk() {
+    final junk = items.where((i) => i.def.rarity == Rarity.junk && !i.listed).toList();
+    var sum = 0;
+    for (final i in junk) {
+      final p = quickPrice(i);
+      items.remove(i);
+      money += p;
+      totalEarned += p;
+      sum += p;
+    }
+    if (junk.isNotEmpty) log('Сдан весь хлам: ${junk.length} шт.', amount: sum);
+    changed();
+    return [junk.length, sum];
+  }
+
+  /// Lists every unlisted non-junk item at estimate * k.
+  int listAll(double k) {
+    var n = 0;
+    for (final i in items) {
+      if (i.listed || i.def.rarity == Rarity.junk) continue;
+      i.listPrice = roundVal(max(10, (i.estimate * k).round()));
+      i.listedDay = day;
+      n++;
+    }
+    changed();
+    return n;
   }
 
   void reset() {
@@ -606,6 +663,7 @@ class GameState extends ChangeNotifier {
         'best': bestFind,
         'bestName': bestFindName,
         'tut': tutorialSeen,
+        'hist': capitalHistory,
       };
 
   Future<void> load() async {
@@ -637,6 +695,7 @@ class GameState extends ChangeNotifier {
       bestFind = (j['best'] as num).toInt();
       bestFindName = j['bestName'] as String;
       tutorialSeen = j['tut'] == true;
+      capitalHistory = ((j['hist'] as List?) ?? const []).map((e) => (e as num).toInt()).toList();
       if (lots.isEmpty) startDay();
       event = null;
     } catch (e) {

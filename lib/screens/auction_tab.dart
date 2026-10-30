@@ -20,6 +20,9 @@ class AuctionTab extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             const CapitalCard(),
+            const SizedBox(height: 12),
+            const TipCard('auction',
+                'Это список сегодняшних лотов. Нажми на лот, чтобы изучить его и начать торги. Когда закончишь, нажми «Закончить день» внизу — ночью придут покупатели.'),
             SectionTitle('Торги сегодня', trailing: Text('${game.lots.length} лотов')),
             for (final l in game.lots) LotCard(lot: l),
             const SizedBox(height: 16),

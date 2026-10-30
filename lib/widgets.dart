@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 
 import 'data.dart';
 import 'game.dart';
 import 'models.dart';
+import 'settings.dart';
 
 class ItemAvatar extends StatelessWidget {
   final Item item;
@@ -177,4 +180,137 @@ Future<void> showTutorial(BuildContext context) {
       ],
     ),
   );
+}
+
+class TipCard extends StatelessWidget {
+  final String id;
+  final String text;
+  final IconData icon;
+  const TipCard(this.id, this.text, {super.key, this.icon = Icons.lightbulb_outline});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: settings,
+      builder: (context, _) {
+        if (!settings.showTip(id)) return const SizedBox.shrink();
+        final cs = Theme.of(context).colorScheme;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+            decoration: BoxDecoration(
+              color: cs.tertiaryContainer,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: cs.onTertiaryContainer, size: 22),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(text, style: TextStyle(color: cs.onTertiaryContainer, fontSize: 14, height: 1.35)),
+                ),
+                IconButton(
+                  tooltip: 'Скрыть подсказку',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () => settings.hideTip(id),
+                  icon: Icon(Icons.close, size: 18, color: cs.onTertiaryContainer),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class CapitalChart extends StatelessWidget {
+  final List<int> values;
+  const CapitalChart({super.key, required this.values});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    if (values.length < 2) {
+      return SizedBox(
+        height: 120,
+        child: Center(
+          child: Text('График появится после пары игровых дней', style: TextStyle(color: cs.onSurfaceVariant)),
+        ),
+      );
+    }
+    final lo = values.reduce(min);
+    final hi = values.reduce(max);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: 140,
+          width: double.infinity,
+          child: CustomPaint(painter: _ChartPainter(values, cs.primary, cs.outlineVariant)),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Text('мин ${rub(lo)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            const Spacer(),
+            Text('макс ${rub(hi)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ChartPainter extends CustomPainter {
+  final List<int> v;
+  final Color line;
+  final Color grid;
+  _ChartPainter(this.v, this.line, this.grid);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final lo = v.reduce(min).toDouble();
+    final hi = v.reduce(max).toDouble();
+    final range = (hi - lo).abs() < 1 ? 1.0 : hi - lo;
+    final gp = Paint()
+      ..color = grid
+      ..strokeWidth = 1;
+    for (var i = 0; i <= 3; i++) {
+      final y = size.height * i / 3;
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gp);
+    }
+    final path = Path();
+    final fill = Path();
+    for (var i = 0; i < v.length; i++) {
+      final x = size.width * i / (v.length - 1);
+      final y = size.height - 6 - (v[i] - lo) / range * (size.height - 12);
+      if (i == 0) {
+        path.moveTo(x, y);
+        fill.moveTo(x, size.height);
+        fill.lineTo(x, y);
+      } else {
+        path.lineTo(x, y);
+        fill.lineTo(x, y);
+      }
+    }
+    fill.lineTo(size.width, size.height);
+    fill.close();
+    canvas.drawPath(fill, Paint()..color = line.withAlpha(40));
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = line
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeJoin = StrokeJoin.round,
+    );
+    final lastY = size.height - 6 - (v.last - lo) / range * (size.height - 12);
+    canvas.drawCircle(Offset(size.width, lastY), 4, Paint()..color = line);
+  }
+
+  @override
+  bool shouldRepaint(covariant _ChartPainter old) => old.v != v || old.line != line;
 }

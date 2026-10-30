@@ -3,10 +3,120 @@ import 'package:flutter/material.dart';
 import '../data.dart';
 import '../game.dart';
 import '../models.dart';
+import '../settings.dart';
 import '../widgets.dart';
 
-class WarehouseTab extends StatelessWidget {
+enum _Sort { value, rarity, name, newest }
+
+enum _Filter { all, listed, unchecked, broken, junk }
+
+const _sortNames = {_Sort.value: 'По цене', _Sort.rarity: 'По редкости', _Sort.name: 'По названию', _Sort.newest: 'Сначала новые'};
+const _filterNames = {
+  _Filter.all: 'Все',
+  _Filter.listed: 'На продаже',
+  _Filter.unchecked: 'Не проверены',
+  _Filter.broken: 'Сломаны',
+  _Filter.junk: 'Хлам',
+};
+
+class WarehouseTab extends StatefulWidget {
   const WarehouseTab({super.key});
+
+  @override
+  State<WarehouseTab> createState() => _WarehouseTabState();
+}
+
+class _WarehouseTabState extends State<WarehouseTab> {
+  _Sort sort = _Sort.value;
+  _Filter filter = _Filter.all;
+  String query = '';
+
+  bool _match(Item i) {
+    if (query.isNotEmpty && !i.def.name.toLowerCase().contains(query.toLowerCase())) return false;
+    return switch (filter) {
+      _Filter.all => true,
+      _Filter.listed => i.listed,
+      _Filter.unchecked => i.fakePossible && !i.appraised,
+      _Filter.broken => i.broken,
+      _Filter.junk => i.def.rarity == Rarity.junk,
+    };
+  }
+
+  List<Item> _sorted() {
+    final idx = <String, int>{};
+    for (var k = 0; k < game.items.length; k++) {
+      idx[game.items[k].uid] = k;
+    }
+    final list = game.items.where(_match).toList();
+    switch (sort) {
+      case _Sort.value:
+        list.sort((a, b) => b.estimate.compareTo(a.estimate));
+        break;
+      case _Sort.rarity:
+        list.sort((a, b) {
+          final r = b.def.rarity.index.compareTo(a.def.rarity.index);
+          return r != 0 ? r : b.estimate.compareTo(a.estimate);
+        });
+        break;
+      case _Sort.name:
+        list.sort((a, b) => a.def.name.compareTo(b.def.name));
+        break;
+      case _Sort.newest:
+        list.sort((a, b) => (idx[b.uid] ?? 0).compareTo(idx[a.uid] ?? 0));
+        break;
+    }
+    return list;
+  }
+
+  Future<void> _bulk(String action) async {
+    if (action == 'junk') {
+      final junk = game.items.where((i) => i.def.rarity == Rarity.junk && !i.listed).toList();
+      if (junk.isEmpty) {
+        _snack('Хлама на складе нет');
+        return;
+      }
+      final sum = junk.fold<int>(0, (s, i) => s + game.quickPrice(i));
+      final ok = await _confirm('Сдать весь хлам?', '${junk.length} шт. уйдут скупщику за ${rub(sum)}.');
+      if (ok) {
+        final r = game.sellAllJunk();
+        _snack('Сдано ${r[0]} шт. за ${rub(r[1])}');
+      }
+    } else if (action == 'listall') {
+      final n = game.items.where((i) => !i.listed && i.def.rarity != Rarity.junk).length;
+      if (n == 0) {
+        _snack('Всё уже выставлено');
+        return;
+      }
+      final ok = await _confirm('Выставить всё?',
+          '$n вещей будут выставлены по цене на 20% выше оценки. Непроверенные подделки могут вернуть.');
+      if (ok) {
+        final k = game.listAll(1.2);
+        _snack('Выставлено: $k');
+      }
+    } else if (action == 'unlistall') {
+      for (final i in game.items.where((i) => i.listed).toList()) {
+        game.unlist(i);
+      }
+      _snack('Все вещи сняты с продажи');
+    }
+  }
+
+  void _snack(String t) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
+
+  Future<bool> _confirm(String title, String text) async {
+    final r = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(text),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Да')),
+        ],
+      ),
+    );
+    return r == true;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +124,7 @@ class WarehouseTab extends StatelessWidget {
       listenable: game,
       builder: (context, _) {
         final cs = Theme.of(context).colorScheme;
-        final list = List<Item>.from(game.items)..sort((a, b) => b.estimate.compareTo(a.estimate));
+        final list = _sorted();
         final fill = (game.items.length / game.capacity).clamp(0.0, 1.0).toDouble();
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -31,6 +141,16 @@ class WarehouseTab extends StatelessWidget {
                       children: [
                         Expanded(child: StatTile('Занято мест', '${game.items.length} из ${game.capacity}')),
                         Expanded(child: StatTile('Оценка склада', rub(game.inventoryValue))),
+                        PopupMenuButton<String>(
+                          tooltip: 'Массовые действия',
+                          icon: const Icon(Icons.more_vert),
+                          onSelected: _bulk,
+                          itemBuilder: (_) => const [
+                            PopupMenuItem(value: 'junk', child: Text('Сдать весь хлам скупщику')),
+                            PopupMenuItem(value: 'listall', child: Text('Выставить всё на продажу')),
+                            PopupMenuItem(value: 'unlistall', child: Text('Снять всё с продажи')),
+                          ],
+                        ),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -52,7 +172,10 @@ class WarehouseTab extends StatelessWidget {
                 ),
               ),
             ),
-            if (list.isEmpty)
+            const SizedBox(height: 12),
+            const TipCard('warehouse',
+                'Нажми на вещь, чтобы проверить подлинность, починить, выставить на продажу или сдать скупщику. Меню с тремя точками выше — массовые действия.'),
+            if (game.items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
                 child: Column(
@@ -66,7 +189,57 @@ class WarehouseTab extends StatelessWidget {
                 ),
               )
             else ...[
-              const SectionTitle('Находки'),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Поиск по складу',
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  filled: true,
+                  fillColor: cs.surfaceContainerLow,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                ),
+                onChanged: (v) => setState(() => query = v.trim()),
+              ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (final f in _Filter.values)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 6),
+                        child: FilterChip(
+                          label: Text(_filterNames[f]!),
+                          selected: filter == f,
+                          onSelected: (_) => setState(() => filter = f),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SectionTitle(
+                'Находки · ${list.length}',
+                trailing: PopupMenuButton<_Sort>(
+                  tooltip: 'Сортировка',
+                  initialValue: sort,
+                  onSelected: (v) => setState(() => sort = v),
+                  itemBuilder: (_) => [
+                    for (final v in _Sort.values) PopupMenuItem(value: v, child: Text(_sortNames[v]!)),
+                  ],
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_sortNames[sort]!, style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600)),
+                      Icon(Icons.arrow_drop_down, color: cs.primary),
+                    ],
+                  ),
+                ),
+              ),
+              if (list.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Text('Ничего не найдено', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
+                ),
               for (final i in list) ItemRow(item: i),
             ],
           ],
@@ -219,8 +392,22 @@ class _ItemSheetBody extends StatelessWidget {
                 ),
               ),
             OutlinedButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
+              onPressed: () async {
+                if (settings.confirmQuickSell && item.estimate >= 1000) {
+                  final ok = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Сдать скупщику?'),
+                      content: Text('«${item.def.name}» уйдёт за ${rub(quick)}. Оценка вещи — ~${rub(item.estimate)}.'),
+                      actions: [
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+                        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Сдать')),
+                      ],
+                    ),
+                  );
+                  if (ok != true) return;
+                }
+                if (context.mounted) Navigator.pop(context);
                 game.quickSell(item);
               },
               icon: const Icon(Icons.payments),
@@ -258,6 +445,17 @@ Future<int?> askPrice(BuildContext context, Item item) {
             children: [
               Text(rub(price), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
               Text('${(k * 100).round()}% от оценки', style: Theme.of(ctx).textTheme.bodySmall),
+              Wrap(
+                spacing: 6,
+                children: [
+                  for (final q in const [0.9, 1.2, 1.5, 2.0])
+                    ChoiceChip(
+                      label: Text('×${q.toString().replaceAll('.', ',')}'),
+                      selected: (k - q).abs() < 0.01,
+                      onSelected: (_) => setS(() => k = q),
+                    ),
+                ],
+              ),
               Slider(
                 value: k,
                 min: 0.5,

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../data.dart';
 import '../game.dart';
 import '../widgets.dart';
+import 'onboarding.dart';
+import 'settings_screen.dart';
 
 class MoreTab extends StatelessWidget {
   const MoreTab({super.key});
@@ -17,7 +19,18 @@ class MoreTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
+            const SectionTitle('Капитал по дням'),
+            Card(
+              elevation: 0,
+              color: cs.surfaceContainerLow,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: CapitalChart(values: [...game.capitalHistory, game.capital]),
+              ),
+            ),
             const SectionTitle('Улучшения'),
+            const TipCard('upgrades',
+                'Первым делом обычно берут стеллажи: больше места — меньше вынужденных продаж за полцены. Рентген окупается, если часто торгуешься за чемоданы.'),
             for (final u in upgradeDefs) _UpgradeCard(u: u),
             const SectionTitle('Разное'),
             Card(
@@ -40,8 +53,22 @@ class MoreTab extends StatelessWidget {
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const JournalScreen())),
                   ),
                   ListTile(
+                    leading: const Icon(Icons.settings_outlined),
+                    title: const Text('Настройки'),
+                    subtitle: const Text('Тема, сложность, скорость торгов, подсказки'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.school),
+                    title: const Text('Обучение'),
+                    subtitle: const Text('Пройти вводное обучение заново'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const OnboardingScreen())),
+                  ),
+                  ListTile(
                     leading: const Icon(Icons.help_outline),
-                    title: const Text('Как играть'),
+                    title: const Text('Краткая памятка'),
                     onTap: () => showTutorial(context),
                   ),
                 ],
@@ -75,7 +102,7 @@ class MoreTab extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             TextButton.icon(
-              onPressed: () => _confirmReset(context),
+              onPressed: () => confirmNewGame(context),
               icon: Icon(Icons.restart_alt, color: cs.error),
               label: Text('Начать заново', style: TextStyle(color: cs.error)),
             ),
@@ -85,20 +112,6 @@ class MoreTab extends StatelessWidget {
     );
   }
 
-  Future<void> _confirmReset(BuildContext context) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Начать заново?'),
-        content: const Text('Весь прогресс, деньги и склад будут удалены.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Начать заново')),
-        ],
-      ),
-    );
-    if (ok == true) game.reset();
-  }
 }
 
 class _UpgradeCard extends StatelessWidget {

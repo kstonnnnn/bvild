@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../data.dart';
 import '../game.dart';
 import '../models.dart';
+import '../settings.dart';
+import '../widgets.dart';
 import 'auction_tab.dart';
 import 'unpack_screen.dart';
 
@@ -17,7 +19,8 @@ class LotScreen extends StatefulWidget {
 }
 
 class _LotScreenState extends State<LotScreen> {
-  static const double roundTime = 4.0;
+  double get roundTime => settings.roundTime;
+  int? autoMax;
 
   String phase = 'preview'; // preview, bidding, done
   late final List<BidderDef> who;
@@ -33,7 +36,7 @@ class _LotScreenState extends State<LotScreen> {
   @override
   void initState() {
     super.initState();
-    who = game.attendees();
+    who = game.attendees(lot);
     price = lot.start;
   }
 
@@ -50,7 +53,7 @@ class _LotScreenState extends State<LotScreen> {
     maxes = game.bidderMaxes(lot, who);
     setState(() {
       phase = 'bidding';
-      timeLeft = 6;
+      timeLeft = roundTime + 2;
       feed.insert(0, 'Торги открыты, стартовая цена ${rub(price)}');
     });
     timer = Timer.periodic(const Duration(milliseconds: 100), (_) => _tick());
@@ -68,6 +71,11 @@ class _LotScreenState extends State<LotScreen> {
     if (!mounted || phase != 'bidding') return;
     setState(() {
       timeLeft -= 0.1;
+      final am = autoMax;
+      if (am != null && leader != 'me' && next <= am && next <= game.money && rng.nextDouble() < 0.18) {
+        _bid('me');
+        settings.tap();
+      }
       final order = List<BidderDef>.from(who)..shuffle(rng);
       final urgency = timeLeft < 1.5 ? 3.0 : 1.0;
       for (final b in order) {
@@ -88,7 +96,48 @@ class _LotScreenState extends State<LotScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Не хватает денег на эту ставку')));
       return;
     }
+    settings.tap();
     setState(() => _bid('me'));
+  }
+
+  Future<void> setAutoBid() async {
+    final lo = next;
+    final hi = game.money;
+    if (hi < lo) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Не хватает денег даже на следующую ставку')));
+      return;
+    }
+    double v = (autoMax ?? (lo + (hi - lo) * 0.3)).clamp(lo, hi).toDouble();
+    final res = await showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          title: const Text('Автоставка'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Игра будет сама перебивать соперников, пока цена не дойдёт до этой суммы.'),
+              const SizedBox(height: 16),
+              Text(rub(game.roundVal(v.round())), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+              if (hi > lo)
+                Slider(
+                  value: v,
+                  min: lo.toDouble(),
+                  max: hi.toDouble(),
+                  onChanged: (x) => setS(() => v = x),
+                ),
+            ],
+          ),
+          actions: [
+            if (autoMax != null) TextButton(onPressed: () => Navigator.pop(ctx, -1), child: const Text('Выключить')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, game.roundVal(v.round())), child: const Text('Включить')),
+          ],
+        ),
+      ),
+    );
+    if (res == null || !mounted) return;
+    setState(() => autoMax = res < 0 ? null : res);
   }
 
   void pass() {
@@ -107,6 +156,7 @@ class _LotScreenState extends State<LotScreen> {
     timer = null;
     phase = 'done';
     if (leader == 'me') {
+      settings.bump();
       game.winLot(lot, price);
     } else {
       game.loseLot(lot, leader, price);
@@ -211,6 +261,13 @@ class _LotScreenState extends State<LotScreen> {
       counts[i.def.cat] = (counts[i.def.cat] ?? 0) + 1;
     }
     return [
+      if (lot.training)
+        const TipCard('lot_training',
+            'Это учебный лот. Против тебя только Гена, и он не будет сильно поднимать цену. Нажми «Начать торги» и сделай пару ставок.',
+            icon: Icons.school)
+      else
+        const TipCard('lot_preview',
+            'Перед торгами посмотри на бирки и город вылета. Рентген покажет категории вещей внутри, но не подлинность. Соперники ниже — у каждого свой характер.'),
       Text('Рентген', style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
       if (lot.xray)
@@ -318,6 +375,12 @@ class _LotScreenState extends State<LotScreen> {
             ),
           ),
         ],
+      ),
+      const SizedBox(height: 8),
+      OutlinedButton.icon(
+        onPressed: setAutoBid,
+        icon: Icon(autoMax == null ? Icons.smart_toy_outlined : Icons.smart_toy),
+        label: Text(autoMax == null ? 'Автоставка' : 'Автоставка до ${rub(autoMax!)}'),
       ),
       if (!canAfford && !mine)
         Padding(

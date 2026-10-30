@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data.dart';
 import '../game.dart';
 import '../models.dart';
+import '../settings.dart';
 import '../widgets.dart';
 
 class UnpackScreen extends StatefulWidget {
@@ -25,7 +26,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
     final found = lot.items.take(shown).where((i) => !i.contraband).fold<int>(0, (s, i) => s + i.estimate);
     final paid = lot.finalPrice ?? 0;
     return Scaffold(
-      appBar: AppBar(title: Text('Распаковка: ${lot.kind.name}')),
+      appBar: AppBar(title: Text('Распаковка · $shown из ${lot.items.length}')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
@@ -38,12 +39,15 @@ class _UnpackScreenState extends State<UnpackScreen> {
                 children: [
                   Expanded(child: StatTile('Заплачено', rub(paid))),
                   Expanded(child: StatTile('Найдено на', rub(found))),
-                  Expanded(child: StatTile('Открыто', '$shown из ${lot.items.length}')),
+                  Expanded(child: StatTile('Итог', '${found - paid >= 0 ? '+' : ''}${rub(found - paid)}')),
+
                 ],
               ),
             ),
           ),
           const SizedBox(height: 12),
+          const TipCard('unpack',
+              'Достаём вещи по одной. Цена рядом — предварительная оценка. Если написано «подлинность не проверена», реальная стоимость может быть гораздо ниже.'),
           for (var i = 0; i < lot.items.length; i++)
             if (i < shown) _RevealTile(key: ValueKey(lot.items[i].uid), item: lot.items[i]) else _HiddenTile(index: i),
           if (all) ...[
@@ -75,7 +79,15 @@ class _UnpackScreenState extends State<UnpackScreen> {
                       flex: 3,
                       child: FilledButton(
                         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                        onPressed: () => setState(() => shown++),
+                        onPressed: () {
+                          final nx = lot.items[shown];
+                          if (nx.def.rarity.index >= Rarity.rare.index) {
+                            settings.bump();
+                          } else {
+                            settings.tap();
+                          }
+                          setState(() => shown++);
+                        },
                         child: const Text('Достать следующее'),
                       ),
                     ),

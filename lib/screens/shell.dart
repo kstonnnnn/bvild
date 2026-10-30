@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../game.dart';
-import '../widgets.dart';
+import '../settings.dart';
 import 'auction_tab.dart';
 import 'market_tab.dart';
 import 'more_tab.dart';
+import 'onboarding.dart';
+import 'settings_screen.dart';
 import 'warehouse_tab.dart';
 
 class Shell extends StatefulWidget {
@@ -22,9 +24,10 @@ class _ShellState extends State<Shell> {
   void initState() {
     super.initState();
     game.addListener(_onGame);
+    settings.addListener(_onSettings);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!game.tutorialSeen) {
-        await showTutorial(context);
+      if (!settings.onboarded) {
+        await Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const OnboardingScreen()));
         game.markTutorialSeen();
       }
       _onGame();
@@ -34,7 +37,12 @@ class _ShellState extends State<Shell> {
   @override
   void dispose() {
     game.removeListener(_onGame);
+    settings.removeListener(_onSettings);
     super.dispose();
+  }
+
+  void _onSettings() {
+    if (mounted) setState(() {});
   }
 
   void _onGame() {
@@ -108,10 +116,21 @@ class _ShellState extends State<Shell> {
     final full = game.items.length >= game.capacity;
     return Scaffold(
       appBar: AppBar(
-        title: Text('День ${game.day}'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(settings.storeTitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+            Text('День ${game.day}', style: const TextStyle(fontWeight: FontWeight.w800)),
+          ],
+        ),
         actions: [
+          IconButton(
+            tooltip: 'Настройки',
+            onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
+            icon: const Icon(Icons.settings_outlined),
+          ),
           Padding(
-            padding: const EdgeInsets.only(right: 16),
+            padding: const EdgeInsets.only(right: 12),
             child: Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

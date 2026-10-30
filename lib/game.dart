@@ -16,15 +16,16 @@ double rd(double a, double b) => a + rng.nextDouble() * (b - a);
 T pick<T>(List<T> l) => l[rng.nextInt(l.length)];
 int round100(num v) => (v / 100).round() * 100;
 
-String rub(num v) {
-  final n = v.round();
+/// Internal amounts are stored in "cents of ten": the player sees value / 10 dollars.
+String cash(num v) {
+  final n = (v / 10).round();
   final s = n.abs().toString();
   final b = StringBuffer();
   for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) b.write(' ');
+    if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
     b.write(s[i]);
   }
-  return '${n < 0 ? '−' : ''}$b ₽';
+  return '${n < 0 ? '−' : ''}\$$b';
 }
 
 class EventChoice {
@@ -49,7 +50,7 @@ class DaySummary {
 class GameState extends ChangeNotifier {
   static const _key = 'lost_luggage_save_v1';
   static const List<int> milestones = [100000, 500000, 1000000];
-  static const List<String> milestoneTitles = ['Перекупщик', 'Скупщик года', 'Король багажа'];
+  static const List<String> milestoneTitles = ['Flipper', 'Dealer of the Year', 'Baggage Baron'];
 
   int day = 1;
   int money = 30000;
@@ -256,7 +257,7 @@ class GameState extends ChangeNotifier {
     money -= price;
     totalSpent += price;
     lotsWon++;
-    log('Куплен лот «${lot.title}»', amount: -price);
+    log('Won lot: ${lot.title}', amount: -price);
     changed();
   }
 
@@ -271,8 +272,8 @@ class GameState extends ChangeNotifier {
     if (lot.status != 'won') return;
     for (final it in lot.items) {
       if (it.contraband) {
-        toast('Таможня изъяла: ${it.def.name}');
-        log('Таможня изъяла: ${it.def.name}');
+        toast('Customs seized: ${it.def.name}');
+        log('Customs seized: ${it.def.name}');
         continue;
       }
       if (it.def.rarity.index >= Rarity.rare.index) found.add(it.defId);
@@ -284,8 +285,8 @@ class GameState extends ChangeNotifier {
         final p = max(5, (it.trueValue * quickRate).round());
         money += p;
         totalEarned += p;
-        toast('Склад полон: «${it.def.name}» ушёл скупщику за ${rub(p)}');
-        log('Склад полон, скупщику: ${it.def.name}', amount: p);
+        toast('Storage full: ${it.def.name} went to the pawnbroker for ${cash(p)}');
+        log('Storage full, pawned: ${it.def.name}', amount: p);
         continue;
       }
       items.add(it);
@@ -307,11 +308,11 @@ class GameState extends ChangeNotifier {
     totalSpent += c;
     i.appraised = true;
     if (i.fake) {
-      toast('Подделка. Реальная цена ${rub(i.trueValue)}');
-      log('Экспертиза: «${i.def.name}» — подделка', amount: -c);
+      toast('Fake. Actual value ${cash(i.trueValue)}');
+      log('Appraisal: ${i.def.name} is fake', amount: -c);
     } else {
-      toast('Подлинник! Стоимость ${rub(i.trueValue)}');
-      log('Экспертиза: «${i.def.name}» — подлинник', amount: -c);
+      toast('Authentic! Worth ${cash(i.trueValue)}');
+      log('Appraisal: ${i.def.name} is authentic', amount: -c);
     }
     changed();
   }
@@ -328,12 +329,12 @@ class GameState extends ChangeNotifier {
     final ok = rng.nextDouble() < (has('workshop') ? 0.95 : 0.85);
     if (ok) {
       i.broken = false;
-      toast('Починено: ${i.def.name}');
-      log('Ремонт удался: ${i.def.name}', amount: -c);
+      toast('Repaired: ${i.def.name}');
+      log('Repair succeeded: ${i.def.name}', amount: -c);
     } else {
       i.repairTried = true;
-      toast('Не получилось. «${i.def.name}» теперь только на запчасти');
-      log('Ремонт не удался: ${i.def.name}', amount: -c);
+      toast('Repair failed. ${i.def.name} is only good for parts now');
+      log('Repair failed: ${i.def.name}', amount: -c);
     }
     changed();
   }
@@ -346,7 +347,7 @@ class GameState extends ChangeNotifier {
     offers.removeWhere((o) => o.uid == i.uid);
     money += p;
     totalEarned += p;
-    log('Продано скупщику: ${i.def.name}', amount: p);
+    log('Pawned: ${i.def.name}', amount: p);
     changed();
   }
 
@@ -367,7 +368,7 @@ class GameState extends ChangeNotifier {
     offers.removeWhere((o) => o.uid == i.uid);
     money += price;
     totalEarned += price;
-    log('Продано: ${i.def.name} ($buyer)', amount: price);
+    log('Sold: ${i.def.name} ($buyer)', amount: price);
     if (i.fake && !i.appraised && price > i.trueValue * 3) {
       final snap = i.toJson();
       snap['lp'] = null;
@@ -396,7 +397,7 @@ class GameState extends ChangeNotifier {
     money -= u.price;
     totalSpent += u.price;
     upgrades.add(u.id);
-    log('Улучшение: ${u.name}', amount: -u.price);
+    log('Upgrade: ${u.name}', amount: -u.price);
     changed();
   }
 
@@ -411,7 +412,7 @@ class GameState extends ChangeNotifier {
     money -= r;
     totalSpent += r;
     s.rent = r;
-    log('Аренда склада', amount: -r);
+    log('Warehouse rent', amount: -r);
 
     offers.removeWhere((o) => o.expires <= day);
 
@@ -426,11 +427,11 @@ class GameState extends ChangeNotifier {
         if (rng.nextDouble() < 0.6) {
           _sell(i, price, buyer);
           s.salesTotal += price;
-          s.lines.add('Продано: ${i.def.name} за ${rub(price)}');
+          s.lines.add('Sold ${i.def.name} for ${cash(price)}');
         } else if (!offers.any((o) => o.uid == i.uid)) {
           final op = roundVal((price * rd(0.72, 0.95)).round());
           offers.add(Offer(i.uid, op, buyer, day + 1));
-          s.lines.add('Предложение за «${i.def.name}»: ${rub(op)}');
+          s.lines.add('Offer for ${i.def.name}: ${cash(op)}');
         }
       }
     }
@@ -444,8 +445,8 @@ class GameState extends ChangeNotifier {
           money -= c.price;
           reputation = max(0, reputation - 8);
           items.add(it);
-          s.lines.add('${c.buyer} вернул «${it.def.name}»: это подделка. Возврат ${rub(c.price)}, репутация −8');
-          log('Возврат подделки: ${it.def.name}', amount: -c.price);
+          s.lines.add('${c.buyer} returned ${it.def.name}: it was fake. Refund ${cash(c.price)}, reputation −8');
+          log('Fake returned: ${it.def.name}', amount: -c.price);
         }
       }
     }
@@ -483,52 +484,52 @@ class GameState extends ChangeNotifier {
     if (proto.isNotEmpty) opts.add(() => _protoEvent(proto.first));
     opts.add(() {
       quickRate = 0.65;
-      return GameEvent('Гена в хорошем настроении', 'Скупщик сегодня платит 65% от стоимости вместо обычных 50%.',
-          [EventChoice('Отлично', () {})]);
+      return GameEvent('Gus is in a good mood', 'The pawnbroker pays 65% of value today instead of the usual 50%.',
+          [EventChoice('Great', () {})]);
     });
     opts.add(() {
       absent.add('timur');
-      return GameEvent('Тимур не пришёл', 'Самый азартный перекупщик сегодня пропускает торги. Конкуренция ниже.',
-          [EventChoice('Понятно', () {})]);
+      return GameEvent('Tony is a no-show', 'The most reckless flipper is skipping today\'s auction. Less competition.',
+          [EventChoice('Got it', () {})]);
     });
     opts.add(() {
       buyerBoost = 1.5;
-      return GameEvent('Сезон распродаж', 'Этой ночью покупатели активнее: шанс продать выставленные вещи выше.',
-          [EventChoice('Хорошо', () {})]);
+      return GameEvent('Shopping season', 'Buyers are more active tonight. Listed items are more likely to sell.',
+          [EventChoice('Nice', () {})]);
     });
     return pick(opts)();
   }
 
   GameEvent _ownerEvent(Item i) {
     final owners = [
-      ['Нина Аркадьевна, 81 год,', 'узнала'],
-      ['Отставной лётчик Пётр Ильич', 'узнал'],
-      ['Студентка Аня из Самары', 'узнала'],
-      ['Учитель на пенсии Марк Семёнович', 'узнал'],
+      ['Nina, 81,', 'recognized her'],
+      ['Retired pilot Peter', 'recognized his'],
+      ['College student Annie', 'recognized her'],
+      ['Mark, a retired teacher,', 'recognized his'],
     ];
     final o = pick(owners);
     final half = max(100, (i.estimate / 2).round());
-    final note = i.def.note.isNotEmpty ? i.def.note : 'Для человека это память.';
+    final note = i.def.note.isNotEmpty ? i.def.note : 'It means a lot to them.';
     return GameEvent(
-      'Нашёлся владелец',
-      '${o[0]} ${o[1]} свою вещь «${i.def.name}» на фото с вашего склада. $note',
+      'The owner turned up',
+      '${o[0]} ${o[1]} ${i.def.name.toLowerCase()} in a photo from your warehouse. $note',
       [
-        EventChoice('Вернуть бесплатно', () {
+        EventChoice('Give it back for free', () {
           items.remove(i);
           reputation = min(100, reputation + 12);
-          log('Вернули владельцу: ${i.def.name}');
-          toast('Репутация +12');
+          log('Returned to owner: ${i.def.name}');
+          toast('Reputation +12');
         }),
-        EventChoice('Продать за ${rub(half)}', () {
+        EventChoice('Sell it to them for ${cash(half)}', () {
           items.remove(i);
           money += half;
           totalEarned += half;
           reputation = min(100, reputation + 3);
-          log('Продали владельцу: ${i.def.name}', amount: half);
+          log('Sold to owner: ${i.def.name}', amount: half);
         }),
-        EventChoice('Отказать', () {
+        EventChoice('Refuse', () {
           reputation = max(0, reputation - 4);
-          log('Отказали владельцу: ${i.def.name}');
+          log('Refused the owner: ${i.def.name}');
         }),
       ],
     );
@@ -537,11 +538,11 @@ class GameState extends ChangeNotifier {
   GameEvent _collectorEvent(Item i) {
     final price = roundVal((i.estimate * rd(1.15, 1.5)).round());
     return GameEvent(
-      'Коллекционер',
-      'Коллекционер из Петербурга увидел «${i.def.name}» и предлагает ${rub(price)}. Сделка только сегодня, без торга.',
+      'A collector calls',
+      'A collector from Boston saw your ${i.def.name.toLowerCase()} and offers ${cash(price)}. Today only, no haggling.',
       [
-        EventChoice('Продать', () => _sell(i, price, 'Коллекционер')),
-        EventChoice('Отказаться', () {}),
+        EventChoice('Sell', () => _sell(i, price, 'Collector')),
+        EventChoice('Decline', () {}),
       ],
     );
   }
@@ -549,16 +550,16 @@ class GameState extends ChangeNotifier {
   GameEvent _protoEvent(Item i) {
     const p = 350000;
     return GameEvent(
-      'Звонок от производителя',
-      'Компания, чей прототип смартфона лежит у вас на складе, предлагает ${rub(p)} за возврат и молчание. Иначе обещают юристов.',
+      'A call from the manufacturer',
+      'The company whose phone prototype is sitting in your warehouse offers ${cash(p)} to get it back quietly. Otherwise, lawyers.',
       [
-        EventChoice('Вернуть за ${rub(p)}', () {
+        EventChoice('Return it for ${cash(p)}', () {
           items.remove(i);
           money += p;
           totalEarned += p;
-          log('Вернули прототип производителю', amount: p);
+          log('Returned the prototype', amount: p);
         }),
-        EventChoice('Оставить себе', () {
+        EventChoice('Keep it', () {
           reputation = max(0, reputation - 5);
         }),
       ],
@@ -595,10 +596,10 @@ class GameState extends ChangeNotifier {
     return Lot(
       id: nextUid(),
       kindId: 'backpack',
-      origin: 'Москва',
-      code: 'SVO',
+      origin: 'Chicago',
+      code: 'ORD',
       weight: 4.2,
-      tags: const ['Учебный лот'],
+      tags: const ['Training lot'],
       items: [mk('hoodie', 1200), mk('thermos', 800), mk('console', 14000), mk('magazine', 20)],
       start: 300,
       training: true,
@@ -616,7 +617,7 @@ class GameState extends ChangeNotifier {
       totalEarned += p;
       sum += p;
     }
-    if (junk.isNotEmpty) log('Сдан весь хлам: ${junk.length} шт.', amount: sum);
+    if (junk.isNotEmpty) log('Pawned all junk: ${junk.length} items', amount: sum);
     changed();
     return [junk.length, sum];
   }

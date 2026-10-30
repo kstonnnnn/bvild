@@ -10,13 +10,13 @@ enum _Sort { value, rarity, name, newest }
 
 enum _Filter { all, listed, unchecked, broken, junk }
 
-const _sortNames = {_Sort.value: 'По цене', _Sort.rarity: 'По редкости', _Sort.name: 'По названию', _Sort.newest: 'Сначала новые'};
+const _sortNames = {_Sort.value: 'By value', _Sort.rarity: 'By rarity', _Sort.name: 'By name', _Sort.newest: 'Newest first'};
 const _filterNames = {
-  _Filter.all: 'Все',
-  _Filter.listed: 'На продаже',
-  _Filter.unchecked: 'Не проверены',
-  _Filter.broken: 'Сломаны',
-  _Filter.junk: 'Хлам',
+  _Filter.all: 'All',
+  _Filter.listed: 'For sale',
+  _Filter.unchecked: 'Unchecked',
+  _Filter.broken: 'Broken',
+  _Filter.junk: 'Junk',
 };
 
 class WarehouseTab extends StatefulWidget {
@@ -72,32 +72,32 @@ class _WarehouseTabState extends State<WarehouseTab> {
     if (action == 'junk') {
       final junk = game.items.where((i) => i.def.rarity == Rarity.junk && !i.listed).toList();
       if (junk.isEmpty) {
-        _snack('Хлама на складе нет');
+        _snack('No junk in storage');
         return;
       }
       final sum = junk.fold<int>(0, (s, i) => s + game.quickPrice(i));
-      final ok = await _confirm('Сдать весь хлам?', '${junk.length} шт. уйдут скупщику за ${rub(sum)}.');
+      final ok = await _confirm('Pawn all junk?', '${junk.length} items will go to the pawnbroker for ${cash(sum)}.');
       if (ok) {
         final r = game.sellAllJunk();
-        _snack('Сдано ${r[0]} шт. за ${rub(r[1])}');
+        _snack('Pawned ${r[0]} items for ${cash(r[1])}');
       }
     } else if (action == 'listall') {
       final n = game.items.where((i) => !i.listed && i.def.rarity != Rarity.junk).length;
       if (n == 0) {
-        _snack('Всё уже выставлено');
+        _snack('Everything is already listed');
         return;
       }
-      final ok = await _confirm('Выставить всё?',
-          '$n вещей будут выставлены по цене на 20% выше оценки. Непроверенные подделки могут вернуть.');
+      final ok = await _confirm('List everything?',
+          '$n items will be listed at 20% above their estimate. Unchecked fakes may be returned.');
       if (ok) {
         final k = game.listAll(1.2);
-        _snack('Выставлено: $k');
+        _snack('Listed: $k');
       }
     } else if (action == 'unlistall') {
       for (final i in game.items.where((i) => i.listed).toList()) {
         game.unlist(i);
       }
-      _snack('Все вещи сняты с продажи');
+      _snack('Everything taken off sale');
     }
   }
 
@@ -110,8 +110,8 @@ class _WarehouseTabState extends State<WarehouseTab> {
         title: Text(title),
         content: Text(text),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Да')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes')),
         ],
       ),
     );
@@ -139,16 +139,16 @@ class _WarehouseTabState extends State<WarehouseTab> {
                   children: [
                     Row(
                       children: [
-                        Expanded(child: StatTile('Занято мест', '${game.items.length} из ${game.capacity}')),
-                        Expanded(child: StatTile('Оценка склада', rub(game.inventoryValue))),
+                        Expanded(child: StatTile('Slots used', '${game.items.length} / ${game.capacity}')),
+                        Expanded(child: StatTile('Storage value', cash(game.inventoryValue))),
                         PopupMenuButton<String>(
-                          tooltip: 'Массовые действия',
+                          tooltip: 'Bulk actions',
                           icon: const Icon(Icons.more_vert),
                           onSelected: _bulk,
                           itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'junk', child: Text('Сдать весь хлам скупщику')),
-                            PopupMenuItem(value: 'listall', child: Text('Выставить всё на продажу')),
-                            PopupMenuItem(value: 'unlistall', child: Text('Снять всё с продажи')),
+                            PopupMenuItem(value: 'junk', child: Text('Pawn all junk')),
+                            PopupMenuItem(value: 'listall', child: Text('List everything for sale')),
+                            PopupMenuItem(value: 'unlistall', child: Text('Take everything off sale')),
                           ],
                         ),
                       ],
@@ -165,7 +165,7 @@ class _WarehouseTabState extends State<WarehouseTab> {
                     if (fill >= 1)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text('Склад полон. Новые находки сразу уйдут скупщику за полцены.',
+                        child: Text('Storage is full. New finds will go straight to the pawnbroker at half price.',
                             style: TextStyle(color: cs.error, fontSize: 13)),
                       ),
                   ],
@@ -174,7 +174,7 @@ class _WarehouseTabState extends State<WarehouseTab> {
             ),
             const SizedBox(height: 12),
             const TipCard('warehouse',
-                'Нажми на вещь, чтобы проверить подлинность, починить, выставить на продажу или сдать скупщику. Меню с тремя точками выше — массовые действия.'),
+                'Tap an item to authenticate, repair, list or pawn it. The three-dot menu above has bulk actions.'),
             if (game.items.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 48),
@@ -182,16 +182,16 @@ class _WarehouseTabState extends State<WarehouseTab> {
                   children: [
                     Icon(Icons.inventory_2_outlined, size: 56, color: cs.onSurfaceVariant),
                     const SizedBox(height: 12),
-                    const Text('Склад пуст', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    const Text('Storage is empty', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('Купи лот на аукционе и распакуй его.', style: TextStyle(color: cs.onSurfaceVariant)),
+                    Text('Win a lot at the auction and unpack it.', style: TextStyle(color: cs.onSurfaceVariant)),
                   ],
                 ),
               )
             else ...[
               TextField(
                 decoration: InputDecoration(
-                  hintText: 'Поиск по складу',
+                  hintText: 'Search storage',
                   prefixIcon: const Icon(Icons.search),
                   isDense: true,
                   filled: true,
@@ -218,9 +218,9 @@ class _WarehouseTabState extends State<WarehouseTab> {
                 ),
               ),
               SectionTitle(
-                'Находки · ${list.length}',
+                'Finds · ${list.length}',
                 trailing: PopupMenuButton<_Sort>(
-                  tooltip: 'Сортировка',
+                  tooltip: 'Sort',
                   initialValue: sort,
                   onSelected: (v) => setState(() => sort = v),
                   itemBuilder: (_) => [
@@ -238,7 +238,7 @@ class _WarehouseTabState extends State<WarehouseTab> {
               if (list.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text('Ничего не найдено', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
+                  child: Text('Nothing found', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
                 ),
               for (final i in list) ItemRow(item: i),
             ],
@@ -264,8 +264,8 @@ class ItemRow extends StatelessWidget {
         onTap: () => showItemSheet(context, item),
         leading: ItemAvatar(item: item),
         title: Text(item.def.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(item.listed ? 'На продаже за ${rub(item.listPrice!)}' : itemStatus(item)),
-        trailing: Text('~${rub(item.estimate)}', style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(item.listed ? 'For sale at ${cash(item.listPrice!)}' : itemStatus(item)),
+        trailing: Text('~${cash(item.estimate)}', style: const TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
   }
@@ -282,7 +282,7 @@ Future<void> showItemSheet(BuildContext context, Item item) {
         if (game.itemByUid(item.uid) == null) {
           return const Padding(
             padding: EdgeInsets.fromLTRB(24, 0, 24, 40),
-            child: Text('Этой вещи больше нет на складе.'),
+            child: Text('This item is no longer in storage.'),
           );
         }
         return _ItemSheetBody(item: item);
@@ -333,13 +333,13 @@ class _ItemSheetBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Оценка: ~${rub(item.estimate)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    Text('Estimate: ~${cash(item.estimate)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text(itemStatus(item), style: TextStyle(color: cs.onSurfaceVariant)),
                     if (item.fakePossible && !item.appraised)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: Text('Такие вещи часто подделывают. Без экспертизы цена может оказаться в разы ниже.',
+                        child: Text('Items like this are often faked. Without an appraisal, the real value could be a fraction of this.',
                             style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                       ),
                     if (d.note.isNotEmpty)
@@ -358,7 +358,7 @@ class _ItemSheetBody extends StatelessWidget {
                 child: FilledButton.tonalIcon(
                   onPressed: game.money >= appraise ? () => game.appraise(item) : null,
                   icon: const Icon(Icons.verified),
-                  label: Text('Экспертиза подлинности — ${rub(appraise)}'),
+                  label: Text('Authenticate — ${cash(appraise)}'),
                 ),
               ),
             if (item.broken && !item.repairTried)
@@ -367,7 +367,7 @@ class _ItemSheetBody extends StatelessWidget {
                 child: FilledButton.tonalIcon(
                   onPressed: game.money >= repair ? () => game.repair(item) : null,
                   icon: const Icon(Icons.build),
-                  label: Text('Отремонтировать — ${rub(repair)}'),
+                  label: Text('Repair — ${cash(repair)}'),
                 ),
               ),
             if (!item.listed)
@@ -379,7 +379,7 @@ class _ItemSheetBody extends StatelessWidget {
                     if (p != null) game.listItem(item, p);
                   },
                   icon: const Icon(Icons.sell),
-                  label: const Text('Выставить на продажу'),
+                  label: const Text('List for sale'),
                 ),
               )
             else
@@ -388,7 +388,7 @@ class _ItemSheetBody extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => game.unlist(item),
                   icon: const Icon(Icons.remove_shopping_cart),
-                  label: Text('Снять с продажи (${rub(item.listPrice!)})'),
+                  label: Text('Take off sale (${cash(item.listPrice!)})'),
                 ),
               ),
             OutlinedButton.icon(
@@ -397,11 +397,11 @@ class _ItemSheetBody extends StatelessWidget {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Сдать скупщику?'),
-                      content: Text('«${item.def.name}» уйдёт за ${rub(quick)}. Оценка вещи — ~${rub(item.estimate)}.'),
+                      title: const Text('Pawn it?'),
+                      content: Text('${item.def.name} will go for ${cash(quick)}. Its estimate is ~${cash(item.estimate)}.'),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
-                        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Сдать')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Pawn')),
                       ],
                     ),
                   );
@@ -411,7 +411,7 @@ class _ItemSheetBody extends StatelessWidget {
                 game.quickSell(item);
               },
               icon: const Icon(Icons.payments),
-              label: Text('Сдать скупщику за ${rub(quick)}'),
+              label: Text('Pawn for ${cash(quick)}'),
             ),
           ],
         ),
@@ -430,27 +430,27 @@ Future<int?> askPrice(BuildContext context, Item item) {
         final price = game.roundVal((base * k).round());
         String hint;
         if (k < 0.9) {
-          hint = 'Уйдёт очень быстро';
+          hint = 'Will sell very fast';
         } else if (k < 1.3) {
-          hint = 'Нормальная цена, продастся за пару ночей';
+          hint = 'Fair price, should sell in a couple of nights';
         } else if (k < 1.8) {
-          hint = 'Дороговато, придётся подождать';
+          hint = 'A bit pricey, expect to wait';
         } else {
-          hint = 'Очень дорого, покупатель может и не найтись';
+          hint = 'Very pricey, a buyer may never show up';
         }
         return AlertDialog(
           title: Text(item.def.name),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(rub(price), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
-              Text('${(k * 100).round()}% от оценки', style: Theme.of(ctx).textTheme.bodySmall),
+              Text(cash(price), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
+              Text('${(k * 100).round()}% of estimate', style: Theme.of(ctx).textTheme.bodySmall),
               Wrap(
                 spacing: 6,
                 children: [
                   for (final q in const [0.9, 1.2, 1.5, 2.0])
                     ChoiceChip(
-                      label: Text('×${q.toString().replaceAll('.', ',')}'),
+                      label: Text('×$q'),
                       selected: (k - q).abs() < 0.01,
                       onSelected: (_) => setS(() => k = q),
                     ),
@@ -467,14 +467,14 @@ Future<int?> askPrice(BuildContext context, Item item) {
               if (item.fakePossible && !item.appraised)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
-                  child: Text('Подлинность не проверена. Если это подделка, покупатель может её вернуть.',
+                  child: Text('Not authenticated. If it turns out to be fake, the buyer may return it.',
                       textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Theme.of(ctx).colorScheme.error)),
                 ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, price), child: const Text('Выставить')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, price), child: const Text('List')),
           ],
         );
       },

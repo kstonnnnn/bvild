@@ -25,23 +25,23 @@ class MarketTab extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Покупатели приходят ночью, когда заканчиваешь день. Чем ниже цена относительно оценки и выше репутация, тем быстрее продаётся.',
+                  'Buyers come at night when you end the day. The lower the price compared to the estimate, and the higher your reputation, the faster things sell.',
                   style: TextStyle(color: cs.onSurfaceVariant),
                 ),
               ),
             ),
             const SizedBox(height: 12),
             const TipCard('market',
-                'Совет: цена на 10–30% выше оценки обычно продаётся за пару ночей. Если покупатель предлагает меньше, решай до конца дня — потом предложение сгорит.'),
+                'Tip: pricing 10–30% above the estimate usually sells within a couple of nights. If a buyer offers less, decide before the day ends or the offer expires.'),
             if (game.offers.isNotEmpty) ...[
-              const SectionTitle('Предложения покупателей'),
+              const SectionTitle('Buyer offers'),
               for (final o in game.offers) _OfferCard(offer: o),
             ],
-            SectionTitle('На продаже', trailing: Text('${listed.length}')),
+            SectionTitle('For sale', trailing: Text('${listed.length}')),
             if (listed.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text('Ничего не выставлено. Выбери вещь на складе и нажми «Выставить на продажу».',
+                child: Text('Nothing listed. Pick an item in Storage and tap List for sale.',
                     style: TextStyle(color: cs.onSurfaceVariant)),
               )
             else
@@ -54,22 +54,22 @@ class MarketTab extends StatelessWidget {
                     onTap: () => showItemSheet(context, i),
                     leading: ItemAvatar(item: i),
                     title: Text(i.def.name),
-                    subtitle: Text('Выставлено ${_ago(game.day - i.listedDay)} · оценка ~${rub(i.estimate)}'),
-                    trailing: Text(rub(i.listPrice!), style: const TextStyle(fontWeight: FontWeight.w800)),
+                    subtitle: Text('Listed ${_ago(game.day - i.listedDay)} · est. ~${cash(i.estimate)}'),
+                    trailing: Text(cash(i.listPrice!), style: const TextStyle(fontWeight: FontWeight.w800)),
                   ),
                 ),
-            const SectionTitle('Последние поступления'),
+            const SectionTitle('Recent income'),
             if (sales.isEmpty)
-              Text('Пока пусто.', style: TextStyle(color: cs.onSurfaceVariant))
+              Text('Nothing yet.', style: TextStyle(color: cs.onSurfaceVariant))
             else
               for (final e in sales)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
-                      SizedBox(width: 52, child: Text('день ${e.day}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
+                      SizedBox(width: 52, child: Text('day ${e.day}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
                       Expanded(child: Text(e.text)),
-                      Text('+${rub(e.amount!)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w700)),
+                      Text('+${cash(e.amount!)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w700)),
                     ],
                   ),
                 ),
@@ -80,9 +80,9 @@ class MarketTab extends StatelessWidget {
   }
 
   String _ago(int d) {
-    if (d <= 0) return 'сегодня';
-    if (d == 1) return 'вчера';
-    return '$d дн. назад';
+    if (d <= 0) return 'today';
+    if (d == 1) return 'yesterday';
+    return '$d days ago';
   }
 }
 
@@ -113,8 +113,8 @@ class _OfferCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(offer.buyer, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      Text('хочет «${item.def.name}» за ${rub(offer.price)}'),
-                      Text('Ваша цена ${rub(item.listPrice ?? item.estimate)}. Предложение действует до конца дня.',
+                      Text('wants your ${item.def.name.toLowerCase()} for ${cash(offer.price)}'),
+                      Text('Your price: ${cash(item.listPrice ?? item.estimate)}. The offer expires at the end of the day.',
                           style: TextStyle(fontSize: 12, color: cs.onSecondaryContainer.withAlpha(180))),
                     ],
                   ),
@@ -125,11 +125,11 @@ class _OfferCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: FilledButton(onPressed: () => game.acceptOffer(offer), child: const Text('Продать')),
+                  child: FilledButton(onPressed: () => game.acceptOffer(offer), child: const Text('Sell')),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton(onPressed: () => game.declineOffer(offer), child: const Text('Отказать')),
+                  child: OutlinedButton(onPressed: () => game.declineOffer(offer), child: const Text('Decline')),
                 ),
               ],
             ),

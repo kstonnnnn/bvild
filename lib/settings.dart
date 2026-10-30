@@ -6,6 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 final AppSettings settings = AppSettings();
 
+/// Filled in by the build pipeline with --dart-define.
+const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '1.2.0');
+const int appBuild = int.fromEnvironment('APP_BUILD', defaultValue: 0);
+const String itchUrl = String.fromEnvironment('ITCH_URL', defaultValue: '');
+
 const List<Color> accentSeeds = [
   Color(0xFFD9971E),
   Color(0xFF2F6BFF),
@@ -14,16 +19,16 @@ const List<Color> accentSeeds = [
   Color(0xFF7A4DFF),
   Color(0xFF00A3A3),
 ];
-const List<String> accentNames = ['Янтарный', 'Синий', 'Зелёный', 'Красный', 'Фиолетовый', 'Бирюзовый'];
-const List<String> themeNames = ['Как в системе', 'Светлая', 'Тёмная'];
-const List<String> speedNames = ['Медленно', 'Обычно', 'Быстро'];
-const List<String> difficultyNames = ['Лёгкая', 'Обычная', 'Хардкор'];
+const List<String> accentNames = ['Amber', 'Blue', 'Green', 'Red', 'Purple', 'Teal'];
+const List<String> themeNames = ['System', 'Light', 'Dark'];
+const List<String> speedNames = ['Slow', 'Normal', 'Fast'];
+const List<String> difficultyNames = ['Easy', 'Normal', 'Hardcore'];
 const List<String> difficultyHints = [
-  'Больше стартовых денег, перекупщики осторожнее, аренда дешевле',
-  'Сбалансированная игра',
-  'Мало денег, жадные перекупщики, дорогая аренда, подделки возвращают чаще',
+  'More starting cash, cautious rivals, cheaper rent',
+  'A balanced game',
+  'Little cash, greedy rivals, pricey rent, fakes get returned more often',
 ];
-const List<String> textSizeNames = ['Мелкий', 'Обычный', 'Крупный'];
+const List<String> textSizeNames = ['Small', 'Normal', 'Large'];
 
 class AppSettings extends ChangeNotifier {
   static const _key = 'lost_luggage_settings_v1';
@@ -48,7 +53,7 @@ class AppSettings extends ChangeNotifier {
   double get rentMult => const [0.7, 1.0, 1.3][difficulty];
   double get complaintChance => const [0.45, 0.65, 0.8][difficulty];
   int get startMoney => const [45000, 30000, 20000][difficulty];
-  String get storeTitle => storeName.trim().isEmpty ? 'Мой склад' : storeName.trim();
+  String get storeTitle => storeName.trim().isEmpty ? 'My Warehouse' : storeName.trim();
 
   bool showTip(String id) => tips && !seenTips.contains(id);
 

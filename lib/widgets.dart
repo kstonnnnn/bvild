@@ -30,10 +30,10 @@ class ItemAvatar extends StatelessWidget {
 
 String itemStatus(Item i) {
   final parts = <String>[rarityLabels[i.def.rarity.index]];
-  if (i.broken) parts.add(i.repairTried ? 'на запчасти' : 'сломано');
-  if (i.fakePossible && !i.appraised) parts.add('подлинность не проверена');
-  if (i.appraised && i.fake) parts.add('подделка');
-  if (i.appraised && !i.fake && i.fakePossible) parts.add('подлинник');
+  if (i.broken) parts.add(i.repairTried ? 'parts only' : 'broken');
+  if (i.fakePossible && !i.appraised) parts.add('not authenticated');
+  if (i.appraised && i.fake) parts.add('fake');
+  if (i.appraised && !i.fake && i.fakePossible) parts.add('authentic');
   return parts.join(' · ');
 }
 
@@ -98,8 +98,8 @@ class CapitalCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Капитал', style: TextStyle(color: cs.onPrimaryContainer.withAlpha(180), fontSize: 13)),
-            Text(rub(game.capital),
+            Text('Net worth', style: TextStyle(color: cs.onPrimaryContainer.withAlpha(180), fontSize: 13)),
+            Text(cash(game.capital),
                 style: TextStyle(color: cs.onPrimaryContainer, fontSize: 30, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
             ClipRRect(
@@ -112,14 +112,14 @@ class CapitalCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text('Цель: ${rub(goal)}',
+            Text('Goal: ${cash(goal)}',
                 style: TextStyle(color: cs.onPrimaryContainer.withAlpha(200), fontSize: 13)),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _mini(context, 'Наличные', rub(game.money))),
-                Expanded(child: _mini(context, 'Склад', '${game.items.length} из ${game.capacity}')),
-                Expanded(child: _mini(context, 'Репутация', '${game.reputation}')),
+                Expanded(child: _mini(context, 'Cash', cash(game.money))),
+                Expanded(child: _mini(context, 'Storage', '${game.items.length} / ${game.capacity}')),
+                Expanded(child: _mini(context, 'Reputation', '${game.reputation}')),
               ],
             ),
           ],
@@ -142,17 +142,17 @@ class CapitalCard extends StatelessWidget {
 
 Future<void> showTutorial(BuildContext context) {
   const steps = [
-    'Каждый день склад аэропорта продаёт невостребованный багаж. Внутри может быть что угодно: от носков до швейцарских часов.',
-    'Изучай подсказки: откуда рейс, сколько весит, какие бирки. За деньги лот можно просветить рентгеном.',
-    'Торгуйся с перекупщиками. После каждой ставки таймер начинается заново. Кто последний — тот и забрал.',
-    'Распакуй лот и разбери находки: проверь подлинность, почини сломанное, выстави на продажу или сдай скупщику.',
-    'Покупатели приходят ночью, когда заканчиваешь день. Продашь непроверенную подделку как оригинал — её могут вернуть.',
-    'Цель — капитал в миллион рублей. Аренда склада списывается каждый день.',
+    'Every day the airport sells off unclaimed luggage. Anything could be inside, from odd socks to a Swiss watch.',
+    'Read the clues: where the flight came from, how heavy it is, what tags it has. For a fee you can X-ray a lot.',
+    'Bid against rival flippers. Every bid resets the timer. Last bid standing wins.',
+    'Unpack your lot and sort the finds: authenticate, repair, list them for sale or pawn them.',
+    'Buyers come at night when you end the day. Sell an unchecked fake as the real thing and it may come back.',
+    'Goal: reach a net worth of \$100,000. Warehouse rent is charged every day.',
   ];
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Как играть'),
+      title: const Text('How to play'),
       content: SizedBox(
         width: 420,
         child: SingleChildScrollView(
@@ -176,7 +176,7 @@ Future<void> showTutorial(BuildContext context) {
         ),
       ),
       actions: [
-        FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Понятно')),
+        FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got it')),
       ],
     ),
   );
@@ -212,7 +212,7 @@ class TipCard extends StatelessWidget {
                   child: Text(text, style: TextStyle(color: cs.onTertiaryContainer, fontSize: 14, height: 1.35)),
                 ),
                 IconButton(
-                  tooltip: 'Скрыть подсказку',
+                  tooltip: 'Hide tip',
                   visualDensity: VisualDensity.compact,
                   onPressed: () => settings.hideTip(id),
                   icon: Icon(Icons.close, size: 18, color: cs.onTertiaryContainer),
@@ -237,7 +237,7 @@ class CapitalChart extends StatelessWidget {
       return SizedBox(
         height: 120,
         child: Center(
-          child: Text('График появится после пары игровых дней', style: TextStyle(color: cs.onSurfaceVariant)),
+          child: Text('The chart appears after a couple of in-game days', style: TextStyle(color: cs.onSurfaceVariant)),
         ),
       );
     }
@@ -254,9 +254,9 @@ class CapitalChart extends StatelessWidget {
         const SizedBox(height: 6),
         Row(
           children: [
-            Text('мин ${rub(lo)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            Text('low ${cash(lo)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             const Spacer(),
-            Text('макс ${rub(hi)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            Text('high ${cash(hi)}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
           ],
         ),
       ],

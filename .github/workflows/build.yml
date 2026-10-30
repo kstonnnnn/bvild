@@ -1,4 +1,4 @@
-name: Build APK
+name: Build
 
 on:
   push:
@@ -12,6 +12,12 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      KS_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+      KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+      ITCH_GAME: ${{ vars.ITCH_GAME }}
+      ITCH_URL: ${{ vars.ITCH_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -25,42 +31,106 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Generate Android project
+      - name: Generate platforms and apply branding
         run: |
           flutter --version
-          if [ ! -d android ]; then
-            flutter create --project-name lost_luggage --org com.kston --platforms=android .
-          fi
-          sed -i 's/android:label="[^"]*"/android:label="Потерянный багаж"/' android/app/src/main/AndroidManifest.xml
+          flutter create --project-name lost_luggage --org com.kston --platforms=android,web .
+          # app name
+          sed -i 's/android:label="[^"]*"/android:label="Lost Luggage"/' android/app/src/main/AndroidManifest.xml
+          # internet access (update check) and https link queries (url_launcher)
+          python3 - <<'PY'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p).read()
+          if 'android.permission.INTERNET' not in s:
+              i = s.index('>', s.index('<manifest')) + 1
+              s = s[:i] + '\n    <uses-permission android:name="android.permission.INTERNET"/>' + s[i:]
+          q = '<intent><action android:name="android.intent.action.VIEW"/><data android:scheme="https"/></intent>'
+          if q not in s:
+              if '<queries>' in s:
+                  s = s.replace('<queries>', '<queries>\n        ' + q, 1)
+              else:
+                  s = s.replace('</manifest>', '    <queries>\n        ' + q + '\n    </queries>\n</manifest>')
+          open(p, 'w').write(s)
+          import json
+          m = json.load(open('web/manifest.json'))
+          m.update({'name': 'Lost Luggage', 'short_name': 'Lost Luggage', 'background_color': '#15171B', 'theme_color': '#FFC72C',
+                    'description': 'Bid blind on unclaimed airport luggage, unpack it and flip the finds.'})
+          json.dump(m, open('web/manifest.json', 'w'), indent=2)
+          h = open('web/index.html').read()
+          import re
+          h = re.sub(r'<title>.*?</title>', '<title>Lost Luggage</title>', h, flags=re.S)
+          h = h.replace('content="lost_luggage"', 'content="Lost Luggage"')
+          open('web/index.html', 'w').write(h)
+          PY
+          # icons
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            cp branding/android/ic_launcher-$d.png android/app/src/main/res/mipmap-$d/ic_launcher.png
+          done
+          cp branding/web/Icon-192.png branding/web/Icon-512.png branding/web/Icon-maskable-192.png branding/web/Icon-maskable-512.png web/icons/
+          cp branding/web/favicon.png web/favicon.png
+          echo "APP_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')" >> $GITHUB_ENV
 
       - name: Build
         id: build
         run: |
           set -o pipefail
+          N=${{ github.run_number }}
+          DEFS="--dart-define=APP_VERSION=$APP_VERSION --dart-define=APP_BUILD=$N --dart-define=ITCH_URL=$ITCH_URL"
           echo "== flutter pub get" > build.log
           flutter pub get 2>&1 | tee -a build.log
           echo "== flutter analyze" >> build.log
           flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee -a build.log || true
           echo "== flutter build apk" >> build.log
-          flutter build apk --release 2>&1 | tee -a build.log
-          cp build/app/outputs/flutter-apk/app-release.apk "lost-luggage-${{ github.run_number }}.apk"
+          flutter build apk --release --build-name=$APP_VERSION --build-number=$N $DEFS 2>&1 | tee -a build.log
+          echo "== flutter build web" >> build.log
+          flutter build web --release $DEFS 2>&1 | tee -a build.log
+          # relative base href so the game works inside the itch.io iframe
+          sed -i 's|<base href="/">|<base href="./">|' build/web/index.html
+          mkdir -p out
+          cp build/app/outputs/flutter-apk/app-release.apk out/unsigned.apk
+          (cd build/web && zip -qr ../../out/lost-luggage-web-$N.zip .)
 
-      - name: Upload artifact
+      - name: Sign APK
+        id: sign
         if: steps.build.outcome == 'success'
-        uses: actions/upload-artifact@v4
-        with:
-          name: lost-luggage-apk
-          path: lost-luggage-${{ github.run_number }}.apk
+        run: |
+          N=${{ github.run_number }}
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ]; then
+            echo "$KS_B64" | base64 -d > release.jks
+            BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+            "$BT/apksigner" sign --ks release.jks --ks-key-alias upload --ks-pass env:KS_PASS --key-pass env:KS_PASS \
+              --out out/lost-luggage-$N.apk out/unsigned.apk
+            "$BT/apksigner" verify --print-certs out/lost-luggage-$N.apk | head -3
+            rm -f release.jks
+            echo "SIGNING=release key" >> $GITHUB_ENV
+          else
+            cp out/unsigned.apk out/lost-luggage-$N.apk
+            echo "SIGNING=DEBUG KEY (add ANDROID_KEYSTORE_B64 and ANDROID_KEYSTORE_PASSWORD secrets)" >> $GITHUB_ENV
+          fi
+          rm -f out/unsigned.apk
 
       - name: Release
         if: steps.build.outcome == 'success'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Потерянный багаж, сборка ${{ github.run_number }}
-          body: Скачай файл .apk ниже и установи на Android.
-          files: lost-luggage-${{ github.run_number }}.apk
+          name: Lost Luggage ${{ env.APP_VERSION }} (build ${{ github.run_number }})
+          body: |
+            Android: download the .apk and install it. Updates install over the previous version.
+            Web: the .zip is the browser build for itch.io.
+            Signing: ${{ env.SIGNING }}
+          files: |
+            out/lost-luggage-${{ github.run_number }}.apk
+            out/lost-luggage-web-${{ github.run_number }}.zip
           make_latest: true
+
+      - name: Upload to itch.io
+        if: steps.build.outcome == 'success' && env.BUTLER_API_KEY != '' && env.ITCH_GAME != ''
+        run: |
+          curl -sL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d butler && chmod +x butler/butler
+          ./butler/butler push out/lost-luggage-${{ github.run_number }}.apk "$ITCH_GAME:android" --userversion "$APP_VERSION.${{ github.run_number }}"
+          ./butler/butler push build/web "$ITCH_GAME:web" --userversion "$APP_VERSION.${{ github.run_number }}"
 
       - name: Post build log to issue
         if: always()
@@ -71,6 +141,7 @@ jobs:
           touch build.log
           {
             echo "outcome=${{ steps.build.outcome }} run=${{ github.run_number }} sha=${{ github.sha }}"
+            echo "signing=${SIGNING:-none} sign_step=${{ steps.sign.outcome }}"
             echo
             echo '```'
             grep -nE "error|Error:|FAILURE|What went wrong|Exception|Try:" build.log | head -120 || true
@@ -85,19 +156,3 @@ jobs:
           else
             gh issue comment "$num" --repo "$REPO" --body-file body2.md
           fi
-
-      - name: Publish build log branch
-        if: always()
-        continue-on-error: true
-        run: |
-          mkdir -p /tmp/cilog
-          cp build.log /tmp/cilog/ 2>/dev/null || echo "no log" > /tmp/cilog/build.log
-          echo "outcome=${{ steps.build.outcome }} run=${{ github.run_number }} sha=${{ github.sha }}" > /tmp/cilog/status.txt
-          cd /tmp/cilog
-          git init -q
-          git config user.name "ci"
-          git config user.email "ci@users.noreply.github.com"
-          git checkout -q -b ci-log
-          git add -A
-          git commit -q -m "CI log for run ${{ github.run_number }}"
-          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-log

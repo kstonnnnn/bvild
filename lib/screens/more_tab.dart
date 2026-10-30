@@ -19,7 +19,7 @@ class MoreTab extends StatelessWidget {
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
-            const SectionTitle('Капитал по дням'),
+            const SectionTitle('Net worth by day'),
             Card(
               elevation: 0,
               color: cs.surfaceContainerLow,
@@ -28,11 +28,11 @@ class MoreTab extends StatelessWidget {
                 child: CapitalChart(values: [...game.capitalHistory, game.capital]),
               ),
             ),
-            const SectionTitle('Улучшения'),
+            const SectionTitle('Upgrades'),
             const TipCard('upgrades',
-                'Первым делом обычно берут стеллажи: больше места — меньше вынужденных продаж за полцены. Рентген окупается, если часто торгуешься за чемоданы.'),
+                'Most players buy Shelving first: more space means fewer forced half-price sales. The X-ray scanner pays off if you bid on suitcases a lot.'),
             for (final u in upgradeDefs) _UpgradeCard(u: u),
-            const SectionTitle('Разное'),
+            const SectionTitle('Other'),
             Card(
               elevation: 0,
               color: cs.surfaceContainerLow,
@@ -40,41 +40,41 @@ class MoreTab extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.collections_bookmark),
-                    title: const Text('Альбом находок'),
-                    subtitle: Text('Редкие и легендарные: ${game.found.length} из $rareTotal'),
+                    title: const Text('Collection'),
+                    subtitle: Text('Rare and legendary finds: ${game.found.length} of $rareTotal'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const CollectionScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.receipt_long),
-                    title: const Text('Журнал'),
-                    subtitle: const Text('Все покупки, продажи и события'),
+                    title: const Text('Ledger'),
+                    subtitle: const Text('Every purchase, sale and event'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const JournalScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.settings_outlined),
-                    title: const Text('Настройки'),
-                    subtitle: const Text('Тема, сложность, скорость торгов, подсказки'),
+                    title: const Text('Settings'),
+                    subtitle: const Text('Theme, difficulty, auction speed, tips'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.school),
-                    title: const Text('Обучение'),
-                    subtitle: const Text('Пройти вводное обучение заново'),
+                    title: const Text('Tutorial'),
+                    subtitle: const Text('Replay the intro tutorial'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const OnboardingScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.help_outline),
-                    title: const Text('Краткая памятка'),
+                    title: const Text('Quick reference'),
                     onTap: () => showTutorial(context),
                   ),
                 ],
               ),
             ),
-            const SectionTitle('Статистика'),
+            const SectionTitle('Stats'),
             Card(
               elevation: 0,
               color: cs.surfaceContainerLow,
@@ -83,18 +83,18 @@ class MoreTab extends StatelessWidget {
                 child: Column(
                   children: [
                     Row(children: [
-                      Expanded(child: StatTile('Дней в деле', '${game.day}')),
-                      Expanded(child: StatTile('Лотов куплено', '${game.lotsWon}')),
+                      Expanded(child: StatTile('Days in business', '${game.day}')),
+                      Expanded(child: StatTile('Lots won', '${game.lotsWon}')),
                     ]),
                     const SizedBox(height: 12),
                     Row(children: [
-                      Expanded(child: StatTile('Заработано', rub(game.totalEarned))),
-                      Expanded(child: StatTile('Потрачено', rub(game.totalSpent))),
+                      Expanded(child: StatTile('Earned', cash(game.totalEarned))),
+                      Expanded(child: StatTile('Spent', cash(game.totalSpent))),
                     ]),
                     const SizedBox(height: 12),
                     Row(children: [
-                      Expanded(child: StatTile('Лучшая находка', game.bestFindName.isEmpty ? '—' : game.bestFindName)),
-                      Expanded(child: StatTile('Её оценка', game.bestFind == 0 ? '—' : rub(game.bestFind))),
+                      Expanded(child: StatTile('Best find', game.bestFindName.isEmpty ? '—' : game.bestFindName)),
+                      Expanded(child: StatTile('Its value', game.bestFind == 0 ? '—' : cash(game.bestFind))),
                     ]),
                   ],
                 ),
@@ -104,7 +104,7 @@ class MoreTab extends StatelessWidget {
             TextButton.icon(
               onPressed: () => confirmNewGame(context),
               icon: Icon(Icons.restart_alt, color: cs.error),
-              label: Text('Начать заново', style: TextStyle(color: cs.error)),
+              label: Text('Start over', style: TextStyle(color: cs.error)),
             ),
           ],
         );
@@ -129,13 +129,13 @@ class _UpgradeCard extends StatelessWidget {
     } else {
       trailing = FilledButton.tonal(
         onPressed: game.canBuy(u) ? () => game.buy(u) : null,
-        child: Text(rub(u.price)),
+        child: Text(cash(u.price)),
       );
     }
     String sub = u.desc;
     if (locked) {
       final req = upgradeDefs.firstWhere((x) => x.id == u.requires);
-      sub = '$sub. Сначала: ${req.name}';
+      sub = '$sub. Requires: ${req.name}';
     }
     return Card(
       elevation: 0,
@@ -160,7 +160,7 @@ class CollectionScreen extends StatelessWidget {
     final defs = itemDefs.where((d) => d.rarity.index >= Rarity.rare.index).toList()
       ..sort((a, b) => b.rarity.index.compareTo(a.rarity.index));
     return Scaffold(
-      appBar: AppBar(title: const Text('Альбом находок')),
+      appBar: AppBar(title: const Text('Collection')),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -211,9 +211,9 @@ class JournalScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Журнал')),
+      appBar: AppBar(title: const Text('Ledger')),
       body: game.journal.isEmpty
-          ? const Center(child: Text('Пока пусто'))
+          ? const Center(child: Text('Nothing yet'))
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: game.journal.length,
@@ -225,10 +225,10 @@ class JournalScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Row(
                     children: [
-                      SizedBox(width: 56, child: Text('день ${e.day}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
+                      SizedBox(width: 56, child: Text('day ${e.day}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
                       Expanded(child: Text(e.text)),
                       if (a != null)
-                        Text('${a > 0 ? '+' : ''}${rub(a)}',
+                        Text('${a > 0 ? '+' : ''}${cash(a)}',
                             style: TextStyle(fontWeight: FontWeight.w700, color: a > 0 ? Colors.green : cs.onSurface)),
                     ],
                   ),

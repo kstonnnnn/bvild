@@ -26,7 +26,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
     final found = lot.items.take(shown).where((i) => !i.contraband).fold<int>(0, (s, i) => s + i.estimate);
     final paid = lot.finalPrice ?? 0;
     return Scaffold(
-      appBar: AppBar(title: Text('Распаковка · $shown из ${lot.items.length}')),
+      appBar: AppBar(title: Text('Unpacking · $shown of ${lot.items.length}')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
@@ -37,9 +37,9 @@ class _UnpackScreenState extends State<UnpackScreen> {
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
-                  Expanded(child: StatTile('Заплачено', rub(paid))),
-                  Expanded(child: StatTile('Найдено на', rub(found))),
-                  Expanded(child: StatTile('Итог', '${found - paid >= 0 ? '+' : ''}${rub(found - paid)}')),
+                  Expanded(child: StatTile('Paid', cash(paid))),
+                  Expanded(child: StatTile('Found', cash(found))),
+                  Expanded(child: StatTile('Profit', '${found - paid >= 0 ? '+' : ''}${cash(found - paid)}')),
 
                 ],
               ),
@@ -47,13 +47,13 @@ class _UnpackScreenState extends State<UnpackScreen> {
           ),
           const SizedBox(height: 12),
           const TipCard('unpack',
-              'Достаём вещи по одной. Цена рядом — предварительная оценка. Если написано «подлинность не проверена», реальная стоимость может быть гораздо ниже.'),
+              'Items come out one at a time. The price is a rough estimate. If it says not authenticated, the real value could be much lower.'),
           for (var i = 0; i < lot.items.length; i++)
             if (i < shown) _RevealTile(key: ValueKey(lot.items[i].uid), item: lot.items[i]) else _HiddenTile(index: i),
           if (all) ...[
             const SizedBox(height: 8),
             Text(
-              found >= paid ? 'По предварительной оценке лот окупился.' : 'Пока в минусе. Может, что-то окажется ценнее после экспертизы.',
+              found >= paid ? 'By the rough estimate, this lot paid off.' : 'In the red for now. Something may turn out to be worth more after an appraisal.',
               textAlign: TextAlign.center,
               style: TextStyle(color: found >= paid ? Colors.green : cs.onSurfaceVariant, fontWeight: FontWeight.w600),
             ),
@@ -71,7 +71,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
                     Navigator.pop(context);
                   },
                   icon: const Icon(Icons.inventory),
-                  label: const Text('Убрать на склад'),
+                  label: const Text('Move to storage'),
                 )
               : Row(
                   children: [
@@ -88,7 +88,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
                           }
                           setState(() => shown++);
                         },
-                        child: const Text('Достать следующее'),
+                        child: const Text('Take out next'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -97,7 +97,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                         onPressed: () => setState(() => shown = lot.items.length),
-                        child: const Text('Всё сразу'),
+                        child: const Text('All at once'),
                       ),
                     ),
                   ],
@@ -123,7 +123,7 @@ class _HiddenTile extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       alignment: Alignment.center,
-      child: Text('Предмет ${index + 1}', style: TextStyle(color: cs.onSurfaceVariant)),
+      child: Text('Item ${index + 1}', style: TextStyle(color: cs.onSurfaceVariant)),
     );
   }
 }
@@ -162,13 +162,13 @@ class _RevealTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.def.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                  Text(item.contraband ? 'Без документов. Это изымет таможня.' : itemStatus(item),
+                  Text(item.contraband ? 'No paperwork. Customs will seize this.' : itemStatus(item),
                       style: TextStyle(fontSize: 12.5, color: item.contraband ? Colors.red : cs.onSurfaceVariant)),
                 ],
               ),
             ),
             if (!item.contraband)
-              Text('~${rub(item.estimate)}', style: TextStyle(fontWeight: FontWeight.w800, color: c)),
+              Text('~${cash(item.estimate)}', style: TextStyle(fontWeight: FontWeight.w800, color: c)),
           ],
         ),
       ),

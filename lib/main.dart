@@ -25,7 +25,7 @@ class LuggageApp extends StatelessWidget {
       builder: (context, _) {
         final seed = settings.seed;
         return MaterialApp(
-          title: 'Потерянный багаж',
+          title: 'Lost Luggage',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: seed), useMaterial3: true),
           darkTheme: ThemeData(

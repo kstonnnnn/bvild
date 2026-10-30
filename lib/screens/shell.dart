@@ -7,6 +7,7 @@ import 'market_tab.dart';
 import 'more_tab.dart';
 import 'onboarding.dart';
 import 'settings_screen.dart';
+import '../updates.dart';
 import 'warehouse_tab.dart';
 
 class Shell extends StatefulWidget {
@@ -31,6 +32,7 @@ class _ShellState extends State<Shell> {
         game.markTutorialSeen();
       }
       _onGame();
+      if (mounted) silentUpdateCheck(context);
     });
   }
 
@@ -102,9 +104,9 @@ class _ShellState extends State<Shell> {
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.emoji_events, size: 40),
         title: Text(GameState.milestoneTitles[k]),
-        content: Text('Капитал достиг ${rub(GameState.milestones[k])}. '
-            '${k == 2 ? 'Ты король потерянного багажа. Можно продолжать играть дальше.' : 'Следующая цель — ${rub(GameState.milestones[k + 1])}.'}'),
-        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Дальше'))],
+        content: Text('Your net worth reached ${cash(GameState.milestones[k])}. '
+            '${k == 2 ? 'You rule the lost luggage business. Keep playing as long as you like.' : 'Next goal: ${cash(GameState.milestones[k + 1])}.'}'),
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Continue'))],
       ),
     );
   }
@@ -120,12 +122,12 @@ class _ShellState extends State<Shell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(settings.storeTitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-            Text('День ${game.day}', style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text('Day ${game.day}', style: const TextStyle(fontWeight: FontWeight.w800)),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Настройки',
+            tooltip: 'Settings',
             onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -135,7 +137,7 @@ class _ShellState extends State<Shell> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: cs.secondaryContainer, borderRadius: BorderRadius.circular(20)),
-                child: Text(rub(game.money),
+                child: Text(cash(game.money),
                     style: TextStyle(fontWeight: FontWeight.w800, color: cs.onSecondaryContainer)),
               ),
             ),
@@ -150,18 +152,18 @@ class _ShellState extends State<Shell> {
         selectedIndex: tab,
         onDestinationSelected: (i) => setState(() => tab = i),
         destinations: [
-          const NavigationDestination(icon: Icon(Icons.gavel), label: 'Аукцион'),
+          const NavigationDestination(icon: Icon(Icons.gavel), label: 'Auction'),
           NavigationDestination(
             icon: Badge(isLabelVisible: full, label: const Text('!'), child: const Icon(Icons.inventory_2_outlined)),
             selectedIcon: const Icon(Icons.inventory_2),
-            label: 'Склад',
+            label: 'Storage',
           ),
           NavigationDestination(
             icon: Badge(isLabelVisible: offers > 0, label: Text('$offers'), child: const Icon(Icons.storefront_outlined)),
             selectedIcon: const Icon(Icons.storefront),
-            label: 'Продажи',
+            label: 'Sales',
           ),
-          const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'Ещё'),
+          const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
         ],
       ),
     );

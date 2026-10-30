@@ -10,18 +10,18 @@ class _Page {
 }
 
 const _pages = [
-  _Page(Icons.luggage, 'Ничейный багаж',
-      'Каждый день склад аэропорта продаёт чемоданы, сумки и коробки, за которыми никто не пришёл. Ты покупаешь их вслепую и перепродаёшь содержимое.'),
-  _Page(Icons.travel_explore, 'Читай подсказки',
-      'Город вылета, вес и бирки многое говорят. Из Дубая чаще везут украшения, из Токио — технику. «Бизнес-класс» и «Кодовый замок» намекают на ценности. Рентген покажет, что внутри.'),
-  _Page(Icons.gavel, 'Торгуйся',
-      'Против тебя играют перекупщики с разными характерами. После каждой ставки таймер начинается заново. Можно включить автоставку до нужной суммы.'),
-  _Page(Icons.verified, 'Проверяй находки',
-      'Часы, сумки и украшения часто оказываются подделками, техника бывает сломана. Экспертиза и ремонт стоят денег, но спасают от ошибок.'),
-  _Page(Icons.storefront, 'Продавай с умом',
-      'Скупщик платит сразу, но половину цены. На площадке можно продать дороже, но покупатели приходят только ночью. Подделку, проданную как оригинал, могут вернуть.'),
-  _Page(Icons.emoji_events, 'Цель — миллион',
-      'Плати аренду, расширяй склад, покупай улучшения и доведи капитал до миллиона рублей. Первый лот сегодня учебный — с него и начни.'),
+  _Page(Icons.luggage, 'Unclaimed bags',
+      'Every day the airport auctions off suitcases, bags and boxes nobody came back for. You buy them sight unseen and flip whatever is inside.'),
+  _Page(Icons.travel_explore, 'Read the clues',
+      'Departure city, weight and tags tell a story. Dubai bags often carry jewelry, Tokyo bags carry gadgets. Business class and combination locks hint at valuables. An X-ray shows what is inside.'),
+  _Page(Icons.gavel, 'Bid smart',
+      'Rival flippers each have their own style. Every bid resets the timer. You can set an auto-bid up to any amount.'),
+  _Page(Icons.verified, 'Check your finds',
+      'Watches, bags and jewelry are often fakes, and electronics may be broken. Appraisals and repairs cost money but save you from costly mistakes.'),
+  _Page(Icons.storefront, 'Sell wisely',
+      'The pawnbroker pays on the spot, but only half. Listing for sale earns more, but buyers only come at night. Sell a fake as the real deal and it may come back.'),
+  _Page(Icons.emoji_events, 'Goal: \$100,000',
+      'Pay the rent, grow your warehouse, buy upgrades and reach a net worth of \$100,000. Today\'s first lot is a training lot, so start there.'),
 ];
 
 class OnboardingScreen extends StatefulWidget {
@@ -61,7 +61,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           children: [
             Align(
               alignment: Alignment.centerRight,
-              child: TextButton(onPressed: _finish, child: const Text('Пропустить')),
+              child: TextButton(onPressed: _finish, child: const Text('Skip')),
             ),
             Expanded(
               child: PageView.builder(
@@ -77,7 +77,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         children: [
                           _bigIcon(cs, Icons.home_work),
                           const SizedBox(height: 28),
-                          Text('Как назовёшь свой склад?',
+                          Text('Name your warehouse',
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
                           const SizedBox(height: 16),
@@ -87,11 +87,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             textAlign: TextAlign.center,
                             textCapitalization: TextCapitalization.sentences,
                             decoration: const InputDecoration(
-                              hintText: 'Например, «Багаж у Саши»',
+                              hintText: 'For example, Sam\'s Baggage Barn',
                               border: OutlineInputBorder(),
                             ),
                           ),
-                          Text('Можно оставить пустым и поменять потом в настройках.',
+                          Text('You can leave it blank and change it later in Settings.',
                               textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
                         ],
                       ),
@@ -141,7 +141,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPressed: last
                     ? _finish
                     : () => _ctrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
-                child: Text(last ? 'Начать игру' : 'Дальше', style: const TextStyle(fontSize: 16)),
+                child: Text(last ? 'Start playing' : 'Next', style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],

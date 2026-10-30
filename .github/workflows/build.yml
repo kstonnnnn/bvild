@@ -1,0 +1,77 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android project
+        run: |
+          flutter --version
+          if [ ! -d android ]; then
+            flutter create --project-name lost_luggage --org com.kston --platforms=android .
+          fi
+          sed -i 's/android:label="[^"]*"/android:label="Потерянный багаж"/' android/app/src/main/AndroidManifest.xml
+
+      - name: Build
+        id: build
+        run: |
+          set -o pipefail
+          echo "== flutter pub get" > build.log
+          flutter pub get 2>&1 | tee -a build.log
+          echo "== flutter analyze" >> build.log
+          flutter analyze --no-fatal-infos --no-fatal-warnings 2>&1 | tee -a build.log || true
+          echo "== flutter build apk" >> build.log
+          flutter build apk --release 2>&1 | tee -a build.log
+          cp build/app/outputs/flutter-apk/app-release.apk "lost-luggage-${{ github.run_number }}.apk"
+
+      - name: Upload artifact
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lost-luggage-apk
+          path: lost-luggage-${{ github.run_number }}.apk
+
+      - name: Release
+        if: steps.build.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Потерянный багаж, сборка ${{ github.run_number }}
+          body: Скачай файл .apk ниже и установи на Android.
+          files: lost-luggage-${{ github.run_number }}.apk
+          make_latest: true
+
+      - name: Publish build log
+        if: always()
+        run: |
+          mkdir -p /tmp/cilog
+          cp build.log /tmp/cilog/ 2>/dev/null || echo "no log" > /tmp/cilog/build.log
+          echo "outcome=${{ steps.build.outcome }} run=${{ github.run_number }} sha=${{ github.sha }}" > /tmp/cilog/status.txt
+          cd /tmp/cilog
+          git init -q
+          git config user.name "ci"
+          git config user.email "ci@users.noreply.github.com"
+          git checkout -q -b ci-log
+          git add -A
+          git commit -q -m "CI log for run ${{ github.run_number }}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" ci-log

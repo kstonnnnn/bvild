@@ -127,7 +127,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     AnimatedBuilder(
                       animation: _intro,
                       builder: (context, _) {
-                        final v = widget.ready ? 1.0 : 0.92 * Curves.easeOut.transform(_intro.value);
+                        final v = (widget.ready ? 1.0 : 0.92) * Curves.easeOut.transform(_intro.value);
                         return TweenAnimationBuilder<double>(
                           tween: Tween<double>(end: v),
                           duration: const Duration(milliseconds: 250),

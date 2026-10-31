@@ -3,6 +3,11 @@ name: Build
 on:
   push:
     branches: [main]
+    # artwork, store texts and docs don't change the game, so they don't need a new build
+    paths-ignore:
+      - 'itch/**'
+      - 'assets_src/**'
+      - '**/*.md'
   workflow_dispatch:
 
 permissions:

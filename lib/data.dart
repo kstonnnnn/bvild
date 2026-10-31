@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'i18n.dart';
+
 enum Rarity { junk, common, good, rare, legendary }
 
-const rarityLabels = ['Junk', 'Common', 'Good', 'Rare', 'Legendary'];
+List<String> get rarityLabels => ['Junk', 'Common', 'Good', 'Rare', 'Legendary'].map(tr).toList();
 const rarityColors = [
   Color(0xFF8A8F98),
   Color(0xFF4E9A63),
@@ -12,9 +14,10 @@ const rarityColors = [
 ];
 
 class Cat {
-  final String label;
+  final String en;
   final IconData icon;
-  const Cat(this.label, this.icon);
+  const Cat(this.en, this.icon);
+  String get label => tr(en);
 }
 
 const Map<String, Cat> cats = {
@@ -37,7 +40,7 @@ const Map<String, Cat> cats = {
 
 class ItemDef {
   final String id;
-  final String name;
+  final String en;
   final String cat;
   final Rarity rarity;
   final int minV;
@@ -46,9 +49,11 @@ class ItemDef {
   final double broken;
   final bool sentimental;
   final IconData? icon;
-  final String note;
-  const ItemDef(this.id, this.name, this.cat, this.rarity, this.minV, this.maxV,
-      {this.fake = 0, this.broken = 0, this.sentimental = false, this.icon, this.note = ''});
+  final String noteEn;
+  const ItemDef(this.id, this.en, this.cat, this.rarity, this.minV, this.maxV,
+      {this.fake = 0, this.broken = 0, this.sentimental = false, this.icon, this.noteEn = ''});
+  String get name => tr(en);
+  String get note => noteEn.isEmpty ? '' : tr(noteEn);
   IconData get iconData => icon ?? cats[cat]!.icon;
 }
 
@@ -71,7 +76,7 @@ const List<ItemDef> itemDefs = [
   ItemDef('powerbank', 'Power bank', 'tech', Rarity.common, 500, 1500, broken: .2, icon: Icons.battery_charging_full),
   ItemDef('cosmetics', 'Makeup kit', 'beauty', Rarity.common, 600, 2500),
   ItemDef('toycar', 'Toy car', 'toys', Rarity.common, 150, 600),
-  ItemDef('plush', 'Teddy bear', 'toys', Rarity.common, 200, 900, sentimental: true, note: 'A child fell asleep with it every night.'),
+  ItemDef('plush', 'Teddy bear', 'toys', Rarity.common, 200, 900, sentimental: true, noteEn: 'A child fell asleep with it every night.'),
   ItemDef('sunglasses', 'Sunglasses', 'clothes', Rarity.common, 300, 1500, fake: .3),
   ItemDef('thermos', 'Thermos', 'sport', Rarity.common, 400, 1200),
   ItemDef('ball', 'Soccer ball', 'sport', Rarity.common, 400, 1500),
@@ -80,7 +85,7 @@ const List<ItemDef> itemDefs = [
   ItemDef('tea', 'Box of fancy tea', 'food', Rarity.common, 400, 1600),
   ItemDef('figurine', 'Porcelain figurine', 'souvenir', Rarity.common, 300, 1400),
   ItemDef('drill', 'Cordless drill', 'tools', Rarity.common, 1200, 3500, broken: .25),
-  ItemDef('album', 'Family photo album', 'books', Rarity.common, 100, 500, sentimental: true, note: 'Three generations of one family are in these pages.'),
+  ItemDef('album', 'Family photo album', 'books', Rarity.common, 100, 500, sentimental: true, noteEn: 'Three generations of one family are in these pages.'),
   // good
   ItemDef('phone', 'Smartphone', 'tech', Rarity.good, 6000, 25000, broken: .35, icon: Icons.smartphone),
   ItemDef('laptop', 'Laptop', 'tech', Rarity.good, 12000, 45000, broken: .3, icon: Icons.laptop),
@@ -104,12 +109,12 @@ const List<ItemDef> itemDefs = [
   ItemDef('chain', 'Gold chain', 'jewelry', Rarity.rare, 25000, 90000, fake: .35),
   ItemDef('luxbag', 'Luxury designer bag', 'clothes', Rarity.rare, 40000, 180000, fake: .6, icon: Icons.shopping_bag),
   ItemDef('painting', 'Small oil painting', 'art', Rarity.rare, 15000, 150000, fake: .5),
-  ItemDef('box', 'Antique jewelry box', 'antique', Rarity.rare, 15000, 70000, sentimental: true, note: 'The owner inherited it from her grandmother.'),
+  ItemDef('box', 'Antique jewelry box', 'antique', Rarity.rare, 15000, 70000, sentimental: true, noteEn: 'The owner inherited it from her grandmother.'),
   ItemDef('coins', 'Coin collection', 'antique', Rarity.rare, 10000, 120000, fake: .3),
   ItemDef('vinyl', 'Rare vinyl record', 'music', Rarity.rare, 6000, 60000),
   ItemDef('filmcam', 'German film camera', 'tech', Rarity.rare, 60000, 250000, fake: .3, broken: .3, icon: Icons.photo_camera),
   ItemDef('earrings', 'Diamond earrings', 'jewelry', Rarity.rare, 50000, 250000, fake: .55),
-  ItemDef('letters', 'Bundle of old letters', 'books', Rarity.rare, 500, 30000, sentimental: true, note: 'Letters a soldier wrote home to his sweetheart.'),
+  ItemDef('letters', 'Bundle of old letters', 'books', Rarity.rare, 500, 30000, sentimental: true, noteEn: 'Letters a soldier wrote home to his sweetheart.'),
   ItemDef('violin', 'Old violin', 'music', Rarity.rare, 20000, 300000, fake: .5),
   // legendary
   ItemDef('meteorite', 'Certified meteorite', 'antique', Rarity.legendary, 300000, 1200000, fake: .5),
@@ -152,6 +157,7 @@ class LotTag {
   final double rare;
   final Map<String, double> w;
   const LotTag(this.label, this.rare, this.w);
+  String get display => tr(label);
 }
 
 const List<LotTag> lotTags = [
@@ -174,7 +180,7 @@ LotTag? tagByLabel(String l) {
 
 class LotKind {
   final String id;
-  final String name;
+  final String en;
   final IconData icon;
   final int minN;
   final int maxN;
@@ -183,7 +189,8 @@ class LotKind {
   final double wMax;
   final int minDay;
   final bool van;
-  const LotKind(this.id, this.name, this.icon, this.minN, this.maxN, this.rare, this.wMin, this.wMax, this.minDay, this.van);
+  const LotKind(this.id, this.en, this.icon, this.minN, this.maxN, this.rare, this.wMin, this.wMax, this.minDay, this.van);
+  String get name => tr(en);
 }
 
 const List<LotKind> lotKinds = [
@@ -199,12 +206,14 @@ LotKind kindById(String id) => lotKinds.firstWhere((k) => k.id == id);
 
 class BidderDef {
   final String id;
-  final String name;
-  final String desc;
+  final String nameEn;
+  final String descEn;
   final double mult;
   final List<String> specials;
   final double eager;
-  const BidderDef(this.id, this.name, this.desc, this.mult, this.specials, this.eager);
+  const BidderDef(this.id, this.nameEn, this.descEn, this.mult, this.specials, this.eager);
+  String get name => tr(nameEn);
+  String get desc => tr(descEn);
 }
 
 const List<BidderDef> bidders = [
@@ -218,12 +227,14 @@ BidderDef bidderById(String id) => bidders.firstWhere((b) => b.id == id);
 
 class UpgradeDef {
   final String id;
-  final String name;
-  final String desc;
+  final String nameEn;
+  final String descEn;
   final int price;
   final IconData icon;
   final String? requires;
-  const UpgradeDef(this.id, this.name, this.desc, this.price, this.icon, [this.requires]);
+  const UpgradeDef(this.id, this.nameEn, this.descEn, this.price, this.icon, [this.requires]);
+  String get name => tr(nameEn);
+  String get desc => tr(descEn);
 }
 
 const List<UpgradeDef> upgradeDefs = [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../i18n.dart';
 import '../settings.dart';
 
 class _Page {
@@ -59,9 +60,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(onPressed: _finish, child: const Text('Skip')),
+            Row(
+              children: [
+                const SizedBox(width: 8),
+                for (var i = 0; i < languageCodes.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      label: Text(languageNames[i]),
+                      selected: settings.lang == languageCodes[i],
+                      onSelected: (_) => setState(() => settings.setLang(languageCodes[i])),
+                    ),
+                  ),
+                const Spacer(),
+                TextButton(onPressed: _finish, child: Text(tr('Skip'))),
+              ],
             ),
             Expanded(
               child: PageView.builder(
@@ -77,7 +90,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         children: [
                           _bigIcon(cs, Icons.home_work),
                           const SizedBox(height: 28),
-                          Text('Name your warehouse',
+                          Text(tr('Name your warehouse'),
                               textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
                           const SizedBox(height: 16),
@@ -86,12 +99,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             maxLength: 24,
                             textAlign: TextAlign.center,
                             textCapitalization: TextCapitalization.sentences,
-                            decoration: const InputDecoration(
-                              hintText: 'For example, Sam\'s Baggage Barn',
-                              border: OutlineInputBorder(),
+                            decoration: InputDecoration(
+                              hintText: tr('For example, Sam\'s Baggage Barn'),
+                              border: const OutlineInputBorder(),
                             ),
                           ),
-                          Text('You can leave it blank and change it later in Settings.',
+                          Text(tr('You can leave it blank and change it later in Settings.'),
                               textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
                         ],
                       ),
@@ -105,11 +118,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       children: [
                         _bigIcon(cs, p.icon),
                         const SizedBox(height: 28),
-                        Text(p.title,
+                        Text(tr(p.title),
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 14),
-                        Text(p.text,
+                        Text(tr(p.text),
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.45)),
                       ],
@@ -141,7 +154,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 onPressed: last
                     ? _finish
                     : () => _ctrl.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOut),
-                child: Text(last ? 'Start playing' : 'Next', style: const TextStyle(fontSize: 16)),
+                child: Text(last ? tr('Start playing') : tr('Next'), style: const TextStyle(fontSize: 16)),
               ),
             ),
           ],

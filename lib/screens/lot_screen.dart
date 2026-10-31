@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../data.dart';
 import '../game.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../settings.dart';
 import '../widgets.dart';
@@ -46,7 +47,7 @@ class _LotScreenState extends State<LotScreen> {
     super.dispose();
   }
 
-  String nameOf(String id) => id == 'me' ? 'You' : bidderById(id).name;
+  String nameOf(String id) => id == 'me' ? tr('You') : bidderById(id).name;
   int get next => leader == null ? price : price + game.bidStep(price);
 
   void start() {
@@ -54,7 +55,7 @@ class _LotScreenState extends State<LotScreen> {
     setState(() {
       phase = 'bidding';
       timeLeft = roundTime + 2;
-      feed.insert(0, 'Bidding is open, starting at ${cash(price)}');
+      feed.insert(0, tr('Bidding is open, starting at {0}', [cash(price)]));
     });
     timer = Timer.periodic(const Duration(milliseconds: 100), (_) => _tick());
   }
@@ -93,7 +94,7 @@ class _LotScreenState extends State<LotScreen> {
   void playerBid() {
     final n = next;
     if (n > game.money) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not enough cash for this bid')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Not enough cash for this bid'))));
       return;
     }
     settings.tap();
@@ -104,7 +105,7 @@ class _LotScreenState extends State<LotScreen> {
     final lo = next;
     final hi = game.money;
     if (hi < lo) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Not enough cash even for the next bid')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Not enough cash even for the next bid'))));
       return;
     }
     double v = (autoMax ?? (lo + (hi - lo) * 0.3)).clamp(lo, hi).toDouble();
@@ -112,11 +113,11 @@ class _LotScreenState extends State<LotScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setS) => AlertDialog(
-          title: const Text('Auto-bid'),
+          title: Text(tr('Auto-bid')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('The game will outbid rivals for you until the price reaches this amount.'),
+              Text(tr('The game will outbid rivals for you until the price reaches this amount.')),
               const SizedBox(height: 16),
               Text(cash(game.roundVal(v.round())), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
               if (hi > lo)
@@ -129,9 +130,9 @@ class _LotScreenState extends State<LotScreen> {
             ],
           ),
           actions: [
-            if (autoMax != null) TextButton(onPressed: () => Navigator.pop(ctx, -1), child: const Text('Turn off')),
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, game.roundVal(v.round())), child: const Text('Turn on')),
+            if (autoMax != null) TextButton(onPressed: () => Navigator.pop(ctx, -1), child: Text(tr('Turn off'))),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, game.roundVal(v.round())), child: Text(tr('Turn on'))),
           ],
         ),
       ),
@@ -207,7 +208,7 @@ class _LotScreenState extends State<LotScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(lot.kind.name, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-                      Text('Flight from ${lot.origin} (${lot.code})', style: TextStyle(color: cs.onSurfaceVariant)),
+                      Text(tr('Flight from {0} ({1})', [tr(lot.origin), lot.code]), style: TextStyle(color: cs.onSurfaceVariant)),
                     ],
                   ),
                 ),
@@ -216,9 +217,9 @@ class _LotScreenState extends State<LotScreen> {
             const SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _kv(context, 'Weight', '${lot.weight.toStringAsFixed(1)} kg')),
-                Expanded(child: _kv(context, 'Start', cash(lot.start))),
-                Expanded(child: _kv(context, 'Items', lot.xray ? '${lot.items.length}' : '?')),
+                Expanded(child: _kv(context, tr('Weight'), tr('{0} kg', [lot.weight.toStringAsFixed(1)]))),
+                Expanded(child: _kv(context, tr('Start'), cash(lot.start))),
+                Expanded(child: _kv(context, tr('Items'), lot.xray ? '${lot.items.length}' : '?')),
               ],
             ),
             if (lot.tags.isNotEmpty) ...[
@@ -229,7 +230,7 @@ class _LotScreenState extends State<LotScreen> {
                 children: [
                   for (final t in lot.tags)
                     Chip(
-                      label: Text(t),
+                      label: Text(tr(t)),
                       visualDensity: VisualDensity.compact,
                       backgroundColor: cs.tertiaryContainer,
                       side: BorderSide.none,
@@ -268,7 +269,7 @@ class _LotScreenState extends State<LotScreen> {
       else
         const TipCard('lot_preview',
             'Check the tags and departure city before bidding. An X-ray shows what kinds of things are inside, but not whether they\'re real. Your rivals are listed below, each with their own style.'),
-      Text('X-ray', style: Theme.of(context).textTheme.titleMedium),
+      Text(tr('X-ray'), style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 8),
       if (lot.xray)
         Wrap(
@@ -293,16 +294,16 @@ class _LotScreenState extends State<LotScreen> {
                 }
               : null,
           icon: const Icon(Icons.document_scanner),
-          label: Text(game.xrayCost == 0 ? 'X-ray (free)' : 'X-ray for ${cash(game.xrayCost)}'),
+          label: Text(game.xrayCost == 0 ? tr('X-ray (free)') : tr('X-ray for {0}', [cash(game.xrayCost)])),
         ),
       if (lot.xray)
         Padding(
           padding: const EdgeInsets.only(top: 6),
-          child: Text('The X-ray shows what\'s inside, but not whether it\'s authentic or working.',
+          child: Text(tr('The X-ray shows what\'s inside, but not whether it\'s authentic or working.'),
               style: Theme.of(context).textTheme.bodySmall),
         ),
       const SizedBox(height: 20),
-      Text('Bidding today', style: Theme.of(context).textTheme.titleMedium),
+      Text(tr('Bidding today'), style: Theme.of(context).textTheme.titleMedium),
       const SizedBox(height: 4),
       for (final b in who)
         ListTile(
@@ -316,7 +317,7 @@ class _LotScreenState extends State<LotScreen> {
         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
         onPressed: start,
         icon: const Icon(Icons.gavel),
-        label: const Text('Start bidding'),
+        label: Text(tr('Start bidding')),
       ),
     ];
   }
@@ -333,7 +334,7 @@ class _LotScreenState extends State<LotScreen> {
           padding: const EdgeInsets.all(18),
           child: Column(
             children: [
-              Text(leader == null ? 'No bids yet' : 'Leading: ${nameOf(leader!)}',
+              Text(leader == null ? tr('No bids yet') : tr('Leading: {0}', [nameOf(leader!)]),
                   style: TextStyle(fontWeight: FontWeight.w600, color: mine ? cs.onPrimaryContainer : cs.onSurface)),
               const SizedBox(height: 6),
               Text(cash(price),
@@ -348,7 +349,7 @@ class _LotScreenState extends State<LotScreen> {
                 ),
               ),
               const SizedBox(height: 6),
-              Text(timeLeft < 1.5 ? 'Going once… going twice…' : 'Every bid resets the timer',
+              Text(timeLeft < 1.5 ? tr('Going once… going twice…') : tr('Every bid resets the timer'),
                   style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
             ],
           ),
@@ -362,7 +363,7 @@ class _LotScreenState extends State<LotScreen> {
             child: FilledButton(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
               onPressed: mine || !canAfford ? null : playerBid,
-              child: Text(mine ? 'Your bid' : 'Bid ${cash(next)}', style: const TextStyle(fontSize: 16)),
+              child: Text(mine ? tr('Your bid') : tr('Bid {0}', [cash(next)]), style: const TextStyle(fontSize: 16)),
             ),
           ),
           const SizedBox(width: 10),
@@ -371,7 +372,7 @@ class _LotScreenState extends State<LotScreen> {
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
               onPressed: mine ? null : pass,
-              child: const Text('Pass'),
+              child: Text(tr('Pass')),
             ),
           ),
         ],
@@ -380,12 +381,12 @@ class _LotScreenState extends State<LotScreen> {
       OutlinedButton.icon(
         onPressed: setAutoBid,
         icon: Icon(autoMax == null ? Icons.smart_toy_outlined : Icons.smart_toy),
-        label: Text(autoMax == null ? 'Auto-bid' : 'Auto-bid up to ${cash(autoMax!)}'),
+        label: Text(autoMax == null ? tr('Auto-bid') : tr('Auto-bid up to {0}', [cash(autoMax!)])),
       ),
       if (!canAfford && !mine)
         Padding(
           padding: const EdgeInsets.only(top: 8),
-          child: Text('Not enough cash: you have ${cash(game.money)}', style: TextStyle(color: cs.error)),
+          child: Text(tr('Not enough cash: you have {0}', [cash(game.money)]), style: TextStyle(color: cs.error)),
         ),
       const SizedBox(height: 16),
       for (final f in feed.take(8))
@@ -409,7 +410,7 @@ class _LotScreenState extends State<LotScreen> {
               children: [
                 Icon(Icons.check_circle, size: 44, color: cs.onPrimaryContainer),
                 const SizedBox(height: 8),
-                Text('You won it for ${cash(price)}',
+                Text(tr('You won it for {0}', [cash(price)]),
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: cs.onPrimaryContainer)),
               ],
             ),
@@ -421,11 +422,11 @@ class _LotScreenState extends State<LotScreen> {
           onPressed: () => Navigator.pushReplacement(
               context, MaterialPageRoute<void>(builder: (_) => UnpackScreen(lot: lot))),
           icon: const Icon(Icons.inventory_2),
-          label: const Text('Unpack'),
+          label: Text(tr('Unpack')),
         ),
       ];
     }
-    final text = leader == null ? 'Nobody bid. The lot was withdrawn.' : '${nameOf(leader!)} won the lot for ${cash(price)}.';
+    final text = leader == null ? tr('Nobody bid. The lot was withdrawn.') : tr('{0} won the lot for {1}.', [nameOf(leader!), cash(price)]);
     return [
       Card(
         elevation: 0,
@@ -440,10 +441,10 @@ class _LotScreenState extends State<LotScreen> {
         OutlinedButton.icon(
           onPressed: () => showLotReveal(context, lot),
           icon: const Icon(Icons.visibility),
-          label: const Text('See what was inside'),
+          label: Text(tr('See what was inside')),
         ),
       const SizedBox(height: 8),
-      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Back to lots')),
+      TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('Back to lots'))),
     ];
   }
 }

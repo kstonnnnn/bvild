@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'i18n.dart';
 import 'settings.dart';
 
 const String _releasesApi = 'https://api.github.com/repos/kstonnnnn/bvild/releases/latest';
@@ -47,7 +48,7 @@ Future<void> openLink(String url) async {
 /// Manual check with a result dialog.
 Future<void> checkForUpdates(BuildContext context) async {
   final messenger = ScaffoldMessenger.of(context);
-  messenger.showSnackBar(const SnackBar(content: Text('Checking for updates…'), duration: Duration(seconds: 2)));
+  messenger.showSnackBar(SnackBar(content: Text(tr('Checking for updates…')), duration: const Duration(seconds: 2)));
   try {
     final info = await fetchLatest();
     if (!context.mounted) return;
@@ -55,27 +56,27 @@ Future<void> checkForUpdates(BuildContext context) async {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(info.isNewer ? 'Update available' : 'You are up to date'),
+        title: Text(info.isNewer ? tr('Update available') : tr('You are up to date')),
         content: Text(info.isNewer
-            ? '${info.name} is out. You have version $appVersion (build $appBuild). '
-                'Download the new APK and install it over the current one. Your progress stays.'
-            : 'You have the latest version: $appVersion (build $appBuild).'),
+            ? tr('{0} is out. You have version {1} (build {2}). Download the new APK and install it over the current one. Your progress stays.',
+                [info.name, appVersion, appBuild])
+            : tr('You have the latest version: {0} (build {1}).', [appVersion, appBuild])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Close'))),
           if (info.isNewer)
             FilledButton(
               onPressed: () {
                 Navigator.pop(ctx);
                 openLink(info.url);
               },
-              child: const Text('Download'),
+              child: Text(tr('Download')),
             ),
         ],
       ),
     );
   } catch (e) {
     messenger.hideCurrentSnackBar();
-    messenger.showSnackBar(const SnackBar(content: Text('Could not check for updates. Are you online?')));
+    messenger.showSnackBar(SnackBar(content: Text(tr('Could not check for updates. Are you online?'))));
   }
 }
 
@@ -87,9 +88,9 @@ Future<void> silentUpdateCheck(BuildContext context) async {
     if (!info.isNewer || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${info.name} is available'),
+        content: Text(tr('{0} is available', [info.name])),
         duration: const Duration(seconds: 8),
-        action: SnackBarAction(label: 'Download', onPressed: () => openLink(info.url)),
+        action: SnackBarAction(label: tr('Download'), onPressed: () => openLink(info.url)),
       ),
     );
   } catch (_) {}

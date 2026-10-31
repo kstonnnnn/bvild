@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../game.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../widgets.dart';
 import 'warehouse_tab.dart';
@@ -25,7 +26,7 @@ class MarketTab extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  'Buyers come at night when you end the day. The lower the price compared to the estimate, and the higher your reputation, the faster things sell.',
+                  tr('Buyers come at night when you end the day. The lower the price compared to the estimate, and the higher your reputation, the faster things sell.'),
                   style: TextStyle(color: cs.onSurfaceVariant),
                 ),
               ),
@@ -41,7 +42,7 @@ class MarketTab extends StatelessWidget {
             if (listed.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Text('Nothing listed. Pick an item in Storage and tap List for sale.',
+                child: Text(tr('Nothing listed. Pick an item in Storage and tap List for sale.'),
                     style: TextStyle(color: cs.onSurfaceVariant)),
               )
             else
@@ -54,20 +55,20 @@ class MarketTab extends StatelessWidget {
                     onTap: () => showItemSheet(context, i),
                     leading: ItemAvatar(item: i),
                     title: Text(i.def.name),
-                    subtitle: Text('Listed ${_ago(game.day - i.listedDay)} · est. ~${cash(i.estimate)}'),
+                    subtitle: Text(tr('Listed {0} · est. ~{1}', [_ago(game.day - i.listedDay), cash(i.estimate)])),
                     trailing: Text(cash(i.listPrice!), style: const TextStyle(fontWeight: FontWeight.w800)),
                   ),
                 ),
             const SectionTitle('Recent income'),
             if (sales.isEmpty)
-              Text('Nothing yet.', style: TextStyle(color: cs.onSurfaceVariant))
+              Text(tr('Nothing yet.'), style: TextStyle(color: cs.onSurfaceVariant))
             else
               for (final e in sales)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 6),
                   child: Row(
                     children: [
-                      SizedBox(width: 52, child: Text('day ${e.day}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
+                      SizedBox(width: 52, child: Text(tr('day {0}', [e.day]), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
                       Expanded(child: Text(e.text)),
                       Text('+${cash(e.amount!)}', style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w700)),
                     ],
@@ -80,9 +81,9 @@ class MarketTab extends StatelessWidget {
   }
 
   String _ago(int d) {
-    if (d <= 0) return 'today';
-    if (d == 1) return 'yesterday';
-    return '$d days ago';
+    if (d <= 0) return tr('today');
+    if (d == 1) return tr('yesterday');
+    return tr('{0} days ago', [d]);
   }
 }
 
@@ -112,9 +113,9 @@ class _OfferCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(offer.buyer, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      Text('wants your ${item.def.name.toLowerCase()} for ${cash(offer.price)}'),
-                      Text('Your price: ${cash(item.listPrice ?? item.estimate)}. The offer expires at the end of the day.',
+                      Text(tr(offer.buyer), style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(tr('wants your {0} for {1}', [inlineName(item.def.name), cash(offer.price)])),
+                      Text(tr('Your price: {0}. The offer expires at the end of the day.', [cash(item.listPrice ?? item.estimate)]),
                           style: TextStyle(fontSize: 12, color: cs.onSecondaryContainer.withAlpha(180))),
                     ],
                   ),
@@ -125,11 +126,11 @@ class _OfferCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: FilledButton(onPressed: () => game.acceptOffer(offer), child: const Text('Sell')),
+                  child: FilledButton(onPressed: () => game.acceptOffer(offer), child: Text(tr('Sell'))),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: OutlinedButton(onPressed: () => game.declineOffer(offer), child: const Text('Decline')),
+                  child: OutlinedButton(onPressed: () => game.declineOffer(offer), child: Text(tr('Decline'))),
                 ),
               ],
             ),

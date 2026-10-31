@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../game.dart';
+import '../i18n.dart';
 import '../settings.dart';
 import 'auction_tab.dart';
 import 'market_tab.dart';
@@ -104,9 +105,9 @@ class _ShellState extends State<Shell> {
       builder: (ctx) => AlertDialog(
         icon: const Icon(Icons.emoji_events, size: 40),
         title: Text(GameState.milestoneTitles[k]),
-        content: Text('Your net worth reached ${cash(GameState.milestones[k])}. '
-            '${k == 2 ? 'You rule the lost luggage business. Keep playing as long as you like.' : 'Next goal: ${cash(GameState.milestones[k + 1])}.'}'),
-        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Continue'))],
+        content: Text('${tr('Your net worth reached {0}.', [cash(GameState.milestones[k])])} '
+            '${k == 2 ? tr('You rule the lost luggage business. Keep playing as long as you like.') : tr('Next goal: {0}.', [cash(GameState.milestones[k + 1])])}'),
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Continue')))],
       ),
     );
   }
@@ -122,12 +123,12 @@ class _ShellState extends State<Shell> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(settings.storeTitle, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-            Text('Day ${game.day}', style: const TextStyle(fontWeight: FontWeight.w800)),
+            Text(tr('Day {0}', [game.day]), style: const TextStyle(fontWeight: FontWeight.w800)),
           ],
         ),
         actions: [
           IconButton(
-            tooltip: 'Settings',
+            tooltip: tr('Settings'),
             onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
             icon: const Icon(Icons.settings_outlined),
           ),
@@ -152,18 +153,18 @@ class _ShellState extends State<Shell> {
         selectedIndex: tab,
         onDestinationSelected: (i) => setState(() => tab = i),
         destinations: [
-          const NavigationDestination(icon: Icon(Icons.gavel), label: 'Auction'),
+          NavigationDestination(icon: const Icon(Icons.gavel), label: tr('Auction')),
           NavigationDestination(
             icon: Badge(isLabelVisible: full, label: const Text('!'), child: const Icon(Icons.inventory_2_outlined)),
             selectedIcon: const Icon(Icons.inventory_2),
-            label: 'Storage',
+            label: tr('Storage'),
           ),
           NavigationDestination(
             icon: Badge(isLabelVisible: offers > 0, label: Text('$offers'), child: const Icon(Icons.storefront_outlined)),
             selectedIcon: const Icon(Icons.storefront),
-            label: 'Sales',
+            label: tr('Sales'),
           ),
-          const NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
+          NavigationDestination(icon: const Icon(Icons.more_horiz), label: tr('More')),
         ],
       ),
     );

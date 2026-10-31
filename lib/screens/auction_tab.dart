@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data.dart';
 import '../game.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../widgets.dart';
 import 'lot_screen.dart';
@@ -23,18 +24,18 @@ class AuctionTab extends StatelessWidget {
             const SizedBox(height: 12),
             const TipCard('auction',
                 'These are today\'s lots. Tap one to inspect it and start bidding. When you\'re done, tap End day at the bottom — buyers come at night.'),
-            SectionTitle('Today\'s auction', trailing: Text('${game.lots.length} lots')),
+            SectionTitle('Today\'s auction', trailing: Text(tr('{0} lots', [game.lots.length]))),
             for (final l in game.lots) LotCard(lot: l),
             const SizedBox(height: 16),
             FilledButton.icon(
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
               onPressed: () => _endDay(context),
               icon: const Icon(Icons.nightlight_round),
-              label: Text(open > 0 ? 'End day ($open lots skipped)' : 'End day'),
+              label: Text(open > 0 ? tr('End day ({0} lots skipped)', [open]) : tr('End day')),
             ),
             const SizedBox(height: 8),
             Text(
-              'Tonight you pay ${cash(game.rent)} in rent, and buyers check out your listed items.',
+              tr('Tonight you pay {0} in rent, and buyers check out your listed items.', [cash(game.rent)]),
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall,
             ),
@@ -49,22 +50,22 @@ class AuctionTab extends StatelessWidget {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Day ${game.day}'),
+        title: Text(tr('Day {0}', [game.day])),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Warehouse rent: −${cash(s.rent)}'),
-              if (s.salesTotal > 0) Text('Overnight sales: +${cash(s.salesTotal)}'),
+              Text(tr('Warehouse rent: −{0}', [cash(s.rent)])),
+              if (s.salesTotal > 0) Text(tr('Overnight sales: +{0}', [cash(s.salesTotal)])),
               const SizedBox(height: 8),
-              if (s.lines.isEmpty) const Text('No buyers showed up overnight.'),
+              if (s.lines.isEmpty) Text(tr('No buyers showed up overnight.')),
               for (final l in s.lines)
                 Padding(padding: const EdgeInsets.only(top: 6), child: Text('• $l')),
             ],
           ),
         ),
-        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('To the auction'))],
+        actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('To the auction')))],
       ),
     );
   }
@@ -78,7 +79,7 @@ class LotCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final k = lot.kind;
-    String sub = 'Flight from ${lot.origin} (${lot.code}) · ${lot.weight.toStringAsFixed(1)} kg';
+    String sub = tr('Flight from {0} ({1}) · {2} kg', [tr(lot.origin), lot.code, lot.weight.toStringAsFixed(1)]);
     Widget trailing;
     switch (lot.status) {
       case 'open':
@@ -86,7 +87,7 @@ class LotCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text('start', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+            Text(tr('start'), style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
             Text(cash(lot.start), style: const TextStyle(fontWeight: FontWeight.w700)),
           ],
         );
@@ -94,19 +95,19 @@ class LotCard extends StatelessWidget {
       case 'won':
         trailing = FilledButton.tonal(
           onPressed: () => _open(context),
-          child: const Text('Unpack'),
+          child: Text(tr('Unpack')),
         );
         break;
       case 'stored':
-        trailing = Text('won\n${cash(lot.finalPrice ?? 0)}',
+        trailing = Text('${tr('won')}\n${cash(lot.finalPrice ?? 0)}',
             textAlign: TextAlign.right, style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600));
         break;
       case 'lost':
-        trailing = Text('lost\n${cash(lot.finalPrice ?? 0)}',
+        trailing = Text('${tr('lost')}\n${cash(lot.finalPrice ?? 0)}',
             textAlign: TextAlign.right, style: TextStyle(color: cs.onSurfaceVariant));
         break;
       default:
-        trailing = Text('no sale', style: TextStyle(color: cs.onSurfaceVariant));
+        trailing = Text(tr('no sale'), style: TextStyle(color: cs.onSurfaceVariant));
     }
     final done = lot.status == 'lost' || lot.status == 'unsold';
     return Opacity(
@@ -178,16 +179,16 @@ class _TagChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: cs.tertiaryContainer, borderRadius: BorderRadius.circular(6)),
-      child: Text(label, style: TextStyle(fontSize: 11.5, color: cs.onTertiaryContainer, fontWeight: FontWeight.w600)),
+      child: Text(tr(label), style: TextStyle(fontSize: 11.5, color: cs.onTertiaryContainer, fontWeight: FontWeight.w600)),
     );
   }
 }
 
 Future<void> showLotReveal(BuildContext context, Lot lot) {
   final who = lot.winner == null
-      ? 'Nobody'
+      ? tr('Nobody')
       : lot.winner == 'me'
-          ? 'You'
+          ? tr('You')
           : bidderById(lot.winner!).name;
   final real = lot.items.where((i) => !i.contraband).fold<int>(0, (s, i) => s + i.trueValue);
   final paid = lot.finalPrice ?? 0;
@@ -205,10 +206,10 @@ Future<void> showLotReveal(BuildContext context, Lot lot) {
         children: [
           Text(lot.title, style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('${who == 'You' ? 'You' : who} paid ${cash(paid)}. The contents were actually worth ${cash(real)}.'),
+          Text(tr('{0} paid {1}. The contents were actually worth {2}.', [who, cash(paid), cash(real)])),
           const SizedBox(height: 4),
           Text(
-            real >= paid ? 'That was a good deal.' : 'The buyer overpaid by ${cash(paid - real)}.',
+            real >= paid ? tr('That was a good deal.') : tr('The buyer overpaid by {0}.', [cash(paid - real)]),
             style: TextStyle(color: real >= paid ? Colors.green : Colors.red, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
@@ -218,11 +219,11 @@ Future<void> showLotReveal(BuildContext context, Lot lot) {
               leading: ItemAvatar(item: i, size: 40),
               title: Text(i.def.name),
               subtitle: Text(i.contraband
-                  ? 'seized by customs'
+                  ? tr('seized by customs')
                   : [
                       rarityLabels[i.def.rarity.index],
-                      if (i.fake) 'fake',
-                      if (i.broken) 'broken',
+                      if (i.fake) tr('fake'),
+                      if (i.broken) tr('broken'),
                     ].join(' · ')),
               trailing: Text(i.contraband ? '—' : cash(i.trueValue), style: const TextStyle(fontWeight: FontWeight.w600)),
             ),

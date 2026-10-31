@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data.dart';
 import '../game.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../settings.dart';
 import '../widgets.dart';
@@ -10,14 +11,19 @@ enum _Sort { value, rarity, name, newest }
 
 enum _Filter { all, listed, unchecked, broken, junk }
 
-const _sortNames = {_Sort.value: 'By value', _Sort.rarity: 'By rarity', _Sort.name: 'By name', _Sort.newest: 'Newest first'};
-const _filterNames = {
-  _Filter.all: 'All',
-  _Filter.listed: 'For sale',
-  _Filter.unchecked: 'Unchecked',
-  _Filter.broken: 'Broken',
-  _Filter.junk: 'Junk',
-};
+Map<_Sort, String> get _sortNames => {
+      _Sort.value: tr('By value'),
+      _Sort.rarity: tr('By rarity'),
+      _Sort.name: tr('By name'),
+      _Sort.newest: tr('Newest first'),
+    };
+Map<_Filter, String> get _filterNames => {
+      _Filter.all: tr('All'),
+      _Filter.listed: tr('For sale'),
+      _Filter.unchecked: tr('Unchecked'),
+      _Filter.broken: tr('Broken'),
+      _Filter.junk: tr('Junk'),
+    };
 
 class WarehouseTab extends StatefulWidget {
   const WarehouseTab({super.key});
@@ -72,32 +78,32 @@ class _WarehouseTabState extends State<WarehouseTab> {
     if (action == 'junk') {
       final junk = game.items.where((i) => i.def.rarity == Rarity.junk && !i.listed).toList();
       if (junk.isEmpty) {
-        _snack('No junk in storage');
+        _snack(tr('No junk in storage'));
         return;
       }
       final sum = junk.fold<int>(0, (s, i) => s + game.quickPrice(i));
-      final ok = await _confirm('Pawn all junk?', '${junk.length} items will go to the pawnbroker for ${cash(sum)}.');
+      final ok = await _confirm(tr('Pawn all junk?'), tr('{0} items will go to the pawnbroker for {1}.', [junk.length, cash(sum)]));
       if (ok) {
         final r = game.sellAllJunk();
-        _snack('Pawned ${r[0]} items for ${cash(r[1])}');
+        _snack(tr('Pawned {0} items for {1}', [r[0], cash(r[1])]));
       }
     } else if (action == 'listall') {
       final n = game.items.where((i) => !i.listed && i.def.rarity != Rarity.junk).length;
       if (n == 0) {
-        _snack('Everything is already listed');
+        _snack(tr('Everything is already listed'));
         return;
       }
-      final ok = await _confirm('List everything?',
-          '$n items will be listed at 20% above their estimate. Unchecked fakes may be returned.');
+      final ok = await _confirm(tr('List everything?'),
+          tr('{0} items will be listed at 20% above their estimate. Unchecked fakes may be returned.', [n]));
       if (ok) {
         final k = game.listAll(1.2);
-        _snack('Listed: $k');
+        _snack(tr('Listed: {0}', [k]));
       }
     } else if (action == 'unlistall') {
       for (final i in game.items.where((i) => i.listed).toList()) {
         game.unlist(i);
       }
-      _snack('Everything taken off sale');
+      _snack(tr('Everything taken off sale'));
     }
   }
 
@@ -110,8 +116,8 @@ class _WarehouseTabState extends State<WarehouseTab> {
         title: Text(title),
         content: Text(text),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Yes')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Yes'))),
         ],
       ),
     );
@@ -142,13 +148,13 @@ class _WarehouseTabState extends State<WarehouseTab> {
                         Expanded(child: StatTile('Slots used', '${game.items.length} / ${game.capacity}')),
                         Expanded(child: StatTile('Storage value', cash(game.inventoryValue))),
                         PopupMenuButton<String>(
-                          tooltip: 'Bulk actions',
+                          tooltip: tr('Bulk actions'),
                           icon: const Icon(Icons.more_vert),
                           onSelected: _bulk,
-                          itemBuilder: (_) => const [
-                            PopupMenuItem(value: 'junk', child: Text('Pawn all junk')),
-                            PopupMenuItem(value: 'listall', child: Text('List everything for sale')),
-                            PopupMenuItem(value: 'unlistall', child: Text('Take everything off sale')),
+                          itemBuilder: (_) => [
+                            PopupMenuItem(value: 'junk', child: Text(tr('Pawn all junk'))),
+                            PopupMenuItem(value: 'listall', child: Text(tr('List everything for sale'))),
+                            PopupMenuItem(value: 'unlistall', child: Text(tr('Take everything off sale'))),
                           ],
                         ),
                       ],
@@ -165,7 +171,7 @@ class _WarehouseTabState extends State<WarehouseTab> {
                     if (fill >= 1)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
-                        child: Text('Storage is full. New finds will go straight to the pawnbroker at half price.',
+                        child: Text(tr('Storage is full. New finds will go straight to the pawnbroker at half price.'),
                             style: TextStyle(color: cs.error, fontSize: 13)),
                       ),
                   ],
@@ -182,16 +188,16 @@ class _WarehouseTabState extends State<WarehouseTab> {
                   children: [
                     Icon(Icons.inventory_2_outlined, size: 56, color: cs.onSurfaceVariant),
                     const SizedBox(height: 12),
-                    const Text('Storage is empty', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                    Text(tr('Storage is empty'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
-                    Text('Win a lot at the auction and unpack it.', style: TextStyle(color: cs.onSurfaceVariant)),
+                    Text(tr('Win a lot at the auction and unpack it.'), style: TextStyle(color: cs.onSurfaceVariant)),
                   ],
                 ),
               )
             else ...[
               TextField(
                 decoration: InputDecoration(
-                  hintText: 'Search storage',
+                  hintText: tr('Search storage'),
                   prefixIcon: const Icon(Icons.search),
                   isDense: true,
                   filled: true,
@@ -218,9 +224,9 @@ class _WarehouseTabState extends State<WarehouseTab> {
                 ),
               ),
               SectionTitle(
-                'Finds · ${list.length}',
+                '${tr('Finds')} · ${list.length}',
                 trailing: PopupMenuButton<_Sort>(
-                  tooltip: 'Sort',
+                  tooltip: tr('Sort'),
                   initialValue: sort,
                   onSelected: (v) => setState(() => sort = v),
                   itemBuilder: (_) => [
@@ -238,7 +244,7 @@ class _WarehouseTabState extends State<WarehouseTab> {
               if (list.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Text('Nothing found', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
+                  child: Text(tr('Nothing found'), textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
                 ),
               for (final i in list) ItemRow(item: i),
             ],
@@ -264,7 +270,7 @@ class ItemRow extends StatelessWidget {
         onTap: () => showItemSheet(context, item),
         leading: ItemAvatar(item: item),
         title: Text(item.def.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text(item.listed ? 'For sale at ${cash(item.listPrice!)}' : itemStatus(item)),
+        subtitle: Text(item.listed ? tr('For sale at {0}', [cash(item.listPrice!)]) : itemStatus(item)),
         trailing: Text('~${cash(item.estimate)}', style: const TextStyle(fontWeight: FontWeight.w700)),
       ),
     );
@@ -280,9 +286,9 @@ Future<void> showItemSheet(BuildContext context, Item item) {
       listenable: game,
       builder: (ctx, _) {
         if (game.itemByUid(item.uid) == null) {
-          return const Padding(
-            padding: EdgeInsets.fromLTRB(24, 0, 24, 40),
-            child: Text('This item is no longer in storage.'),
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+            child: Text(tr('This item is no longer in storage.')),
           );
         }
         return _ItemSheetBody(item: item);
@@ -333,13 +339,13 @@ class _ItemSheetBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Estimate: ~${cash(item.estimate)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                    Text(tr('Estimate: ~{0}', [cash(item.estimate)]), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 4),
                     Text(itemStatus(item), style: TextStyle(color: cs.onSurfaceVariant)),
                     if (item.fakePossible && !item.appraised)
                       Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: Text('Items like this are often faked. Without an appraisal, the real value could be a fraction of this.',
+                        child: Text(tr('Items like this are often faked. Without an appraisal, the real value could be a fraction of this.'),
                             style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                       ),
                     if (d.note.isNotEmpty)
@@ -358,7 +364,7 @@ class _ItemSheetBody extends StatelessWidget {
                 child: FilledButton.tonalIcon(
                   onPressed: game.money >= appraise ? () => game.appraise(item) : null,
                   icon: const Icon(Icons.verified),
-                  label: Text('Authenticate — ${cash(appraise)}'),
+                  label: Text(tr('Authenticate — {0}', [cash(appraise)])),
                 ),
               ),
             if (item.broken && !item.repairTried)
@@ -367,7 +373,7 @@ class _ItemSheetBody extends StatelessWidget {
                 child: FilledButton.tonalIcon(
                   onPressed: game.money >= repair ? () => game.repair(item) : null,
                   icon: const Icon(Icons.build),
-                  label: Text('Repair — ${cash(repair)}'),
+                  label: Text(tr('Repair — {0}', [cash(repair)])),
                 ),
               ),
             if (!item.listed)
@@ -379,7 +385,7 @@ class _ItemSheetBody extends StatelessWidget {
                     if (p != null) game.listItem(item, p);
                   },
                   icon: const Icon(Icons.sell),
-                  label: const Text('List for sale'),
+                  label: Text(tr('List for sale')),
                 ),
               )
             else
@@ -388,7 +394,7 @@ class _ItemSheetBody extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () => game.unlist(item),
                   icon: const Icon(Icons.remove_shopping_cart),
-                  label: Text('Take off sale (${cash(item.listPrice!)})'),
+                  label: Text(tr('Take off sale ({0})', [cash(item.listPrice!)])),
                 ),
               ),
             OutlinedButton.icon(
@@ -397,11 +403,11 @@ class _ItemSheetBody extends StatelessWidget {
                   final ok = await showDialog<bool>(
                     context: context,
                     builder: (ctx) => AlertDialog(
-                      title: const Text('Pawn it?'),
-                      content: Text('${item.def.name} will go for ${cash(quick)}. Its estimate is ~${cash(item.estimate)}.'),
+                      title: Text(tr('Pawn it?')),
+                      content: Text(tr('{0} will go for {1}. Its estimate is ~{2}.', [item.def.name, cash(quick), cash(item.estimate)])),
                       actions: [
-                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-                        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Pawn')),
+                        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancel'))),
+                        FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Pawn'))),
                       ],
                     ),
                   );
@@ -411,7 +417,7 @@ class _ItemSheetBody extends StatelessWidget {
                 game.quickSell(item);
               },
               icon: const Icon(Icons.payments),
-              label: Text('Pawn for ${cash(quick)}'),
+              label: Text(tr('Pawn for {0}', [cash(quick)])),
             ),
           ],
         ),
@@ -430,13 +436,13 @@ Future<int?> askPrice(BuildContext context, Item item) {
         final price = game.roundVal((base * k).round());
         String hint;
         if (k < 0.9) {
-          hint = 'Will sell very fast';
+          hint = tr('Will sell very fast');
         } else if (k < 1.3) {
-          hint = 'Fair price, should sell in a couple of nights';
+          hint = tr('Fair price, should sell in a couple of nights');
         } else if (k < 1.8) {
-          hint = 'A bit pricey, expect to wait';
+          hint = tr('A bit pricey, expect to wait');
         } else {
-          hint = 'Very pricey, a buyer may never show up';
+          hint = tr('Very pricey, a buyer may never show up');
         }
         return AlertDialog(
           title: Text(item.def.name),
@@ -444,7 +450,7 @@ Future<int?> askPrice(BuildContext context, Item item) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(cash(price), style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w800)),
-              Text('${(k * 100).round()}% of estimate', style: Theme.of(ctx).textTheme.bodySmall),
+              Text(tr('{0}% of estimate', [(k * 100).round()]), style: Theme.of(ctx).textTheme.bodySmall),
               Wrap(
                 spacing: 6,
                 children: [
@@ -467,14 +473,14 @@ Future<int?> askPrice(BuildContext context, Item item) {
               if (item.fakePossible && !item.appraised)
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
-                  child: Text('Not authenticated. If it turns out to be fake, the buyer may return it.',
+                  child: Text(tr('Not authenticated. If it turns out to be fake, the buyer may return it.'),
                       textAlign: TextAlign.center, style: TextStyle(fontSize: 12.5, color: Theme.of(ctx).colorScheme.error)),
                 ),
             ],
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, price), child: const Text('List')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, price), child: Text(tr('List'))),
           ],
         );
       },

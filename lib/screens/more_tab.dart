@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data.dart';
 import '../game.dart';
+import '../i18n.dart';
 import '../widgets.dart';
 import 'onboarding.dart';
 import 'settings_screen.dart';
@@ -40,35 +41,35 @@ class MoreTab extends StatelessWidget {
                 children: [
                   ListTile(
                     leading: const Icon(Icons.collections_bookmark),
-                    title: const Text('Collection'),
-                    subtitle: Text('Rare and legendary finds: ${game.found.length} of $rareTotal'),
+                    title: Text(tr('Collection')),
+                    subtitle: Text(tr('Rare and legendary finds: {0} of {1}', [game.found.length, rareTotal])),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const CollectionScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.receipt_long),
-                    title: const Text('Ledger'),
-                    subtitle: const Text('Every purchase, sale and event'),
+                    title: Text(tr('Ledger')),
+                    subtitle: Text(tr('Every purchase, sale and event')),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const JournalScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.settings_outlined),
-                    title: const Text('Settings'),
-                    subtitle: const Text('Theme, difficulty, auction speed, tips'),
+                    title: Text(tr('Settings')),
+                    subtitle: Text(tr('Language, theme, difficulty, auction speed, tips')),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const SettingsScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.school),
-                    title: const Text('Tutorial'),
-                    subtitle: const Text('Replay the intro tutorial'),
+                    title: Text(tr('Tutorial')),
+                    subtitle: Text(tr('Replay the intro tutorial')),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const OnboardingScreen())),
                   ),
                   ListTile(
                     leading: const Icon(Icons.help_outline),
-                    title: const Text('Quick reference'),
+                    title: Text(tr('Quick reference')),
                     onTap: () => showTutorial(context),
                   ),
                 ],
@@ -93,7 +94,7 @@ class MoreTab extends StatelessWidget {
                     ]),
                     const SizedBox(height: 12),
                     Row(children: [
-                      Expanded(child: StatTile('Best find', game.bestFindName.isEmpty ? '—' : game.bestFindName)),
+                      Expanded(child: StatTile('Best find', game.bestFindName.isEmpty ? '—' : tr(game.bestFindName))),
                       Expanded(child: StatTile('Its value', game.bestFind == 0 ? '—' : cash(game.bestFind))),
                     ]),
                   ],
@@ -104,7 +105,7 @@ class MoreTab extends StatelessWidget {
             TextButton.icon(
               onPressed: () => confirmNewGame(context),
               icon: Icon(Icons.restart_alt, color: cs.error),
-              label: Text('Start over', style: TextStyle(color: cs.error)),
+              label: Text(tr('Start over'), style: TextStyle(color: cs.error)),
             ),
           ],
         );
@@ -135,7 +136,7 @@ class _UpgradeCard extends StatelessWidget {
     String sub = u.desc;
     if (locked) {
       final req = upgradeDefs.firstWhere((x) => x.id == u.requires);
-      sub = '$sub. Requires: ${req.name}';
+      sub = '$sub. ${tr('Requires: {0}', [req.name])}';
     }
     return Card(
       elevation: 0,
@@ -160,7 +161,7 @@ class CollectionScreen extends StatelessWidget {
     final defs = itemDefs.where((d) => d.rarity.index >= Rarity.rare.index).toList()
       ..sort((a, b) => b.rarity.index.compareTo(a.rarity.index));
     return Scaffold(
-      appBar: AppBar(title: const Text('Collection')),
+      appBar: AppBar(title: Text(tr('Collection'))),
       body: GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -211,9 +212,9 @@ class JournalScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Ledger')),
+      appBar: AppBar(title: Text(tr('Ledger'))),
       body: game.journal.isEmpty
-          ? const Center(child: Text('Nothing yet'))
+          ? Center(child: Text(tr('Nothing yet')))
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: game.journal.length,
@@ -225,7 +226,7 @@ class JournalScreen extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Row(
                     children: [
-                      SizedBox(width: 56, child: Text('day ${e.day}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
+                      SizedBox(width: 56, child: Text(tr('day {0}', [e.day]), style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant))),
                       Expanded(child: Text(e.text)),
                       if (a != null)
                         Text('${a > 0 ? '+' : ''}${cash(a)}',

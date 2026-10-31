@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data.dart';
+import 'i18n.dart';
 import 'models.dart';
 import 'settings.dart';
 
@@ -50,7 +51,7 @@ class DaySummary {
 class GameState extends ChangeNotifier {
   static const _key = 'lost_luggage_save_v1';
   static const List<int> milestones = [100000, 500000, 1000000];
-  static const List<String> milestoneTitles = ['Flipper', 'Dealer of the Year', 'Baggage Baron'];
+  static List<String> get milestoneTitles => ['Flipper', 'Dealer of the Year', 'Baggage Baron'].map(tr).toList();
 
   int day = 1;
   int money = 30000;
@@ -257,7 +258,7 @@ class GameState extends ChangeNotifier {
     money -= price;
     totalSpent += price;
     lotsWon++;
-    log('Won lot: ${lot.title}', amount: -price);
+    log(tr('Won lot: {0}', [lot.title]), amount: -price);
     changed();
   }
 
@@ -272,21 +273,21 @@ class GameState extends ChangeNotifier {
     if (lot.status != 'won') return;
     for (final it in lot.items) {
       if (it.contraband) {
-        toast('Customs seized: ${it.def.name}');
-        log('Customs seized: ${it.def.name}');
+        toast(tr('Customs seized: {0}', [it.def.name]));
+        log(tr('Customs seized: {0}', [it.def.name]));
         continue;
       }
       if (it.def.rarity.index >= Rarity.rare.index) found.add(it.defId);
       if (it.estimate > bestFind) {
         bestFind = it.estimate;
-        bestFindName = it.def.name;
+        bestFindName = it.def.en;
       }
       if (items.length >= capacity) {
         final p = max(5, (it.trueValue * quickRate).round());
         money += p;
         totalEarned += p;
-        toast('Storage full: ${it.def.name} went to the pawnbroker for ${cash(p)}');
-        log('Storage full, pawned: ${it.def.name}', amount: p);
+        toast(tr('Storage full: {0} went to the pawnbroker for {1}', [it.def.name, cash(p)]));
+        log(tr('Storage full, pawned: {0}', [it.def.name]), amount: p);
         continue;
       }
       items.add(it);
@@ -308,11 +309,11 @@ class GameState extends ChangeNotifier {
     totalSpent += c;
     i.appraised = true;
     if (i.fake) {
-      toast('Fake. Actual value ${cash(i.trueValue)}');
-      log('Appraisal: ${i.def.name} is fake', amount: -c);
+      toast(tr('Fake. Actual value {0}', [cash(i.trueValue)]));
+      log(tr('Appraisal: {0} is fake', [i.def.name]), amount: -c);
     } else {
-      toast('Authentic! Worth ${cash(i.trueValue)}');
-      log('Appraisal: ${i.def.name} is authentic', amount: -c);
+      toast(tr('Authentic! Worth {0}', [cash(i.trueValue)]));
+      log(tr('Appraisal: {0} is authentic', [i.def.name]), amount: -c);
     }
     changed();
   }
@@ -329,12 +330,12 @@ class GameState extends ChangeNotifier {
     final ok = rng.nextDouble() < (has('workshop') ? 0.95 : 0.85);
     if (ok) {
       i.broken = false;
-      toast('Repaired: ${i.def.name}');
-      log('Repair succeeded: ${i.def.name}', amount: -c);
+      toast(tr('Repaired: {0}', [i.def.name]));
+      log(tr('Repair succeeded: {0}', [i.def.name]), amount: -c);
     } else {
       i.repairTried = true;
-      toast('Repair failed. ${i.def.name} is only good for parts now');
-      log('Repair failed: ${i.def.name}', amount: -c);
+      toast(tr('Repair failed. {0} is only good for parts now', [i.def.name]));
+      log(tr('Repair failed: {0}', [i.def.name]), amount: -c);
     }
     changed();
   }
@@ -347,7 +348,7 @@ class GameState extends ChangeNotifier {
     offers.removeWhere((o) => o.uid == i.uid);
     money += p;
     totalEarned += p;
-    log('Pawned: ${i.def.name}', amount: p);
+    log(tr('Pawned: {0}', [i.def.name]), amount: p);
     changed();
   }
 
@@ -368,7 +369,7 @@ class GameState extends ChangeNotifier {
     offers.removeWhere((o) => o.uid == i.uid);
     money += price;
     totalEarned += price;
-    log('Sold: ${i.def.name} ($buyer)', amount: price);
+    log(tr('Sold: {0} ({1})', [i.def.name, tr(buyer)]), amount: price);
     if (i.fake && !i.appraised && price > i.trueValue * 3) {
       final snap = i.toJson();
       snap['lp'] = null;
@@ -397,7 +398,7 @@ class GameState extends ChangeNotifier {
     money -= u.price;
     totalSpent += u.price;
     upgrades.add(u.id);
-    log('Upgrade: ${u.name}', amount: -u.price);
+    log(tr('Upgrade: {0}', [u.name]), amount: -u.price);
     changed();
   }
 
@@ -412,7 +413,7 @@ class GameState extends ChangeNotifier {
     money -= r;
     totalSpent += r;
     s.rent = r;
-    log('Warehouse rent', amount: -r);
+    log(tr('Warehouse rent'), amount: -r);
 
     offers.removeWhere((o) => o.expires <= day);
 
@@ -427,11 +428,11 @@ class GameState extends ChangeNotifier {
         if (rng.nextDouble() < 0.6) {
           _sell(i, price, buyer);
           s.salesTotal += price;
-          s.lines.add('Sold ${i.def.name} for ${cash(price)}');
+          s.lines.add(tr('Sold {0} for {1}', [i.def.name, cash(price)]));
         } else if (!offers.any((o) => o.uid == i.uid)) {
           final op = roundVal((price * rd(0.72, 0.95)).round());
           offers.add(Offer(i.uid, op, buyer, day + 1));
-          s.lines.add('Offer for ${i.def.name}: ${cash(op)}');
+          s.lines.add(tr('Offer for {0}: {1}', [i.def.name, cash(op)]));
         }
       }
     }
@@ -445,8 +446,8 @@ class GameState extends ChangeNotifier {
           money -= c.price;
           reputation = max(0, reputation - 8);
           items.add(it);
-          s.lines.add('${c.buyer} returned ${it.def.name}: it was fake. Refund ${cash(c.price)}, reputation −8');
-          log('Fake returned: ${it.def.name}', amount: -c.price);
+          s.lines.add(tr('{0} returned {1}: it was fake. Refund {2}, reputation −8', [tr(c.buyer), it.def.name, cash(c.price)]));
+          log(tr('Fake returned: {0}', [it.def.name]), amount: -c.price);
         }
       }
     }
@@ -484,52 +485,52 @@ class GameState extends ChangeNotifier {
     if (proto.isNotEmpty) opts.add(() => _protoEvent(proto.first));
     opts.add(() {
       quickRate = 0.65;
-      return GameEvent('Gus is in a good mood', 'The pawnbroker pays 65% of value today instead of the usual 50%.',
-          [EventChoice('Great', () {})]);
+      return GameEvent(tr('Gus is in a good mood'), tr('The pawnbroker pays 65% of value today instead of the usual 50%.'),
+          [EventChoice(tr('Great'), () {})]);
     });
     opts.add(() {
       absent.add('timur');
-      return GameEvent('Tony is a no-show', 'The most reckless flipper is skipping today\'s auction. Less competition.',
-          [EventChoice('Got it', () {})]);
+      return GameEvent(tr('Tony is a no-show'), tr('The most reckless flipper is skipping today\'s auction. Less competition.'),
+          [EventChoice(tr('Got it'), () {})]);
     });
     opts.add(() {
       buyerBoost = 1.5;
-      return GameEvent('Shopping season', 'Buyers are more active tonight. Listed items are more likely to sell.',
-          [EventChoice('Nice', () {})]);
+      return GameEvent(tr('Shopping season'), tr('Buyers are more active tonight. Listed items are more likely to sell.'),
+          [EventChoice(tr('Nice'), () {})]);
     });
     return pick(opts)();
   }
 
   GameEvent _ownerEvent(Item i) {
-    final owners = [
-      ['Nina, 81,', 'recognized her'],
-      ['Retired pilot Peter', 'recognized his'],
-      ['College student Annie', 'recognized her'],
-      ['Mark, a retired teacher,', 'recognized his'],
+    const owners = [
+      'Nina, 81, recognized her {0} in a photo from your warehouse.',
+      'Retired pilot Peter recognized his {0} in a photo from your warehouse.',
+      'College student Annie recognized her {0} in a photo from your warehouse.',
+      'Mark, a retired teacher, recognized his {0} in a photo from your warehouse.',
     ];
     final o = pick(owners);
     final half = max(100, (i.estimate / 2).round());
-    final note = i.def.note.isNotEmpty ? i.def.note : 'It means a lot to them.';
+    final note = i.def.note.isNotEmpty ? i.def.note : tr('It means a lot to them.');
     return GameEvent(
-      'The owner turned up',
-      '${o[0]} ${o[1]} ${i.def.name.toLowerCase()} in a photo from your warehouse. $note',
+      tr('The owner turned up'),
+      '${tr(o, [inlineName(i.def.name)])} $note',
       [
-        EventChoice('Give it back for free', () {
+        EventChoice(tr('Give it back for free'), () {
           items.remove(i);
           reputation = min(100, reputation + 12);
-          log('Returned to owner: ${i.def.name}');
-          toast('Reputation +12');
+          log(tr('Returned to owner: {0}', [i.def.name]));
+          toast(tr('Reputation +12'));
         }),
-        EventChoice('Sell it to them for ${cash(half)}', () {
+        EventChoice(tr('Sell it to them for {0}', [cash(half)]), () {
           items.remove(i);
           money += half;
           totalEarned += half;
           reputation = min(100, reputation + 3);
-          log('Sold to owner: ${i.def.name}', amount: half);
+          log(tr('Sold to owner: {0}', [i.def.name]), amount: half);
         }),
-        EventChoice('Refuse', () {
+        EventChoice(tr('Refuse'), () {
           reputation = max(0, reputation - 4);
-          log('Refused the owner: ${i.def.name}');
+          log(tr('Refused the owner: {0}', [i.def.name]));
         }),
       ],
     );
@@ -538,11 +539,11 @@ class GameState extends ChangeNotifier {
   GameEvent _collectorEvent(Item i) {
     final price = roundVal((i.estimate * rd(1.15, 1.5)).round());
     return GameEvent(
-      'A collector calls',
-      'A collector from Boston saw your ${i.def.name.toLowerCase()} and offers ${cash(price)}. Today only, no haggling.',
+      tr('A collector calls'),
+      tr('A collector from Boston saw your {0} and offers {1}. Today only, no haggling.', [inlineName(i.def.name), cash(price)]),
       [
-        EventChoice('Sell', () => _sell(i, price, 'Collector')),
-        EventChoice('Decline', () {}),
+        EventChoice(tr('Sell'), () => _sell(i, price, 'Collector')),
+        EventChoice(tr('Decline'), () {}),
       ],
     );
   }
@@ -550,16 +551,16 @@ class GameState extends ChangeNotifier {
   GameEvent _protoEvent(Item i) {
     const p = 350000;
     return GameEvent(
-      'A call from the manufacturer',
-      'The company whose phone prototype is sitting in your warehouse offers ${cash(p)} to get it back quietly. Otherwise, lawyers.',
+      tr('A call from the manufacturer'),
+      tr('The company whose phone prototype is sitting in your warehouse offers {0} to get it back quietly. Otherwise, lawyers.', [cash(p)]),
       [
-        EventChoice('Return it for ${cash(p)}', () {
+        EventChoice(tr('Return it for {0}', [cash(p)]), () {
           items.remove(i);
           money += p;
           totalEarned += p;
-          log('Returned the prototype', amount: p);
+          log(tr('Returned the prototype'), amount: p);
         }),
-        EventChoice('Keep it', () {
+        EventChoice(tr('Keep it'), () {
           reputation = max(0, reputation - 5);
         }),
       ],
@@ -617,7 +618,7 @@ class GameState extends ChangeNotifier {
       totalEarned += p;
       sum += p;
     }
-    if (junk.isNotEmpty) log('Pawned all junk: ${junk.length} items', amount: sum);
+    if (junk.isNotEmpty) log(tr('Pawned all junk: {0} items', [junk.length]), amount: sum);
     changed();
     return [junk.length, sum];
   }

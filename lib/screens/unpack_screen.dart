@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../data.dart';
 import '../game.dart';
+import '../i18n.dart';
 import '../models.dart';
 import '../settings.dart';
 import '../widgets.dart';
@@ -26,7 +27,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
     final found = lot.items.take(shown).where((i) => !i.contraband).fold<int>(0, (s, i) => s + i.estimate);
     final paid = lot.finalPrice ?? 0;
     return Scaffold(
-      appBar: AppBar(title: Text('Unpacking · $shown of ${lot.items.length}')),
+      appBar: AppBar(title: Text(tr('Unpacking · {0} of {1}', [shown, lot.items.length]))),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
@@ -53,7 +54,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
           if (all) ...[
             const SizedBox(height: 8),
             Text(
-              found >= paid ? 'By the rough estimate, this lot paid off.' : 'In the red for now. Something may turn out to be worth more after an appraisal.',
+              found >= paid ? tr('By the rough estimate, this lot paid off.') : tr('In the red for now. Something may turn out to be worth more after an appraisal.'),
               textAlign: TextAlign.center,
               style: TextStyle(color: found >= paid ? Colors.green : cs.onSurfaceVariant, fontWeight: FontWeight.w600),
             ),
@@ -71,7 +72,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
                     Navigator.pop(context);
                   },
                   icon: const Icon(Icons.inventory),
-                  label: const Text('Move to storage'),
+                  label: Text(tr('Move to storage')),
                 )
               : Row(
                   children: [
@@ -88,7 +89,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
                           }
                           setState(() => shown++);
                         },
-                        child: const Text('Take out next'),
+                        child: Text(tr('Take out next')),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -97,7 +98,7 @@ class _UnpackScreenState extends State<UnpackScreen> {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                         onPressed: () => setState(() => shown = lot.items.length),
-                        child: const Text('All at once'),
+                        child: Text(tr('All at once')),
                       ),
                     ),
                   ],
@@ -123,7 +124,7 @@ class _HiddenTile extends StatelessWidget {
         border: Border.all(color: cs.outlineVariant),
       ),
       alignment: Alignment.center,
-      child: Text('Item ${index + 1}', style: TextStyle(color: cs.onSurfaceVariant)),
+      child: Text(tr('Item {0}', [index + 1]), style: TextStyle(color: cs.onSurfaceVariant)),
     );
   }
 }
@@ -162,7 +163,7 @@ class _RevealTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(item.def.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
-                  Text(item.contraband ? 'No paperwork. Customs will seize this.' : itemStatus(item),
+                  Text(item.contraband ? tr('No paperwork. Customs will seize this.') : itemStatus(item),
                       style: TextStyle(fontSize: 12.5, color: item.contraband ? Colors.red : cs.onSurfaceVariant)),
                 ],
               ),

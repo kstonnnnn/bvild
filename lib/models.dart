@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'data.dart';
+import 'i18n.dart';
 
 class Item {
   final String uid;
@@ -104,7 +105,7 @@ class Lot {
   });
 
   LotKind get kind => kindById(kindId);
-  String get title => '${kind.name} · $origin';
+  String get title => '${kind.name} · ${tr(origin)}';
   int get nominal => items.fold<int>(0, (s, i) => s + i.value);
   int get realValue => items.fold<int>(0, (s, i) => s + i.trueValue);
 

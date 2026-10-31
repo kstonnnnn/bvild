@@ -61,6 +61,17 @@ jobs:
           h = re.sub(r'<title>.*?</title>', '<title>Lost Luggage</title>', h, flags=re.S)
           h = h.replace('content="lost_luggage"', 'content="Lost Luggage"')
           open('web/index.html', 'w').write(h)
+          # dark launch background so the loading screen doesn't flash white first
+          import glob
+          for lb in glob.glob('android/app/src/main/res/drawable*/launch_background.xml'):
+              open(lb, 'w').write('<?xml version="1.0" encoding="utf-8"?>\n'
+                  '<layer-list xmlns:android="http://schemas.android.com/apk/res/android">\n'
+                  '    <item><shape android:shape="rectangle"><solid android:color="#FF15171B"/></shape></item>\n'
+                  '</layer-list>\n')
+          h = open('web/index.html').read()
+          if 'background:#15171B' not in h:
+              h = h.replace('</head>', '  <style>html,body{background:#15171B;}</style>\n</head>', 1)
+          open('web/index.html', 'w').write(h)
           PY
           # icons
           for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do

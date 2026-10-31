@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'i18n.dart';
+
 final AppSettings settings = AppSettings();
 
 /// Filled in by the build pipeline with --dart-define.
-const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '1.2.0');
+const String appVersion = String.fromEnvironment('APP_VERSION', defaultValue: '1.3.0');
 const int appBuild = int.fromEnvironment('APP_BUILD', defaultValue: 0);
 const String itchUrl = String.fromEnvironment('ITCH_URL', defaultValue: '');
 
@@ -19,16 +21,16 @@ const List<Color> accentSeeds = [
   Color(0xFF7A4DFF),
   Color(0xFF00A3A3),
 ];
-const List<String> accentNames = ['Amber', 'Blue', 'Green', 'Red', 'Purple', 'Teal'];
-const List<String> themeNames = ['System', 'Light', 'Dark'];
-const List<String> speedNames = ['Slow', 'Normal', 'Fast'];
-const List<String> difficultyNames = ['Easy', 'Normal', 'Hardcore'];
-const List<String> difficultyHints = [
-  'More starting cash, cautious rivals, cheaper rent',
-  'A balanced game',
-  'Little cash, greedy rivals, pricey rent, fakes get returned more often',
-];
-const List<String> textSizeNames = ['Small', 'Normal', 'Large'];
+List<String> get accentNames => ['Amber', 'Blue', 'Green', 'Red', 'Purple', 'Teal'].map(tr).toList();
+List<String> get themeNames => ['System', 'Light', 'Dark'].map(tr).toList();
+List<String> get speedNames => ['Slow', 'Normal', 'Fast'].map(tr).toList();
+List<String> get difficultyNames => ['Easy', 'Normal', 'Hardcore'].map(tr).toList();
+List<String> get difficultyHints => [
+      'More starting cash, cautious rivals, cheaper rent',
+      'A balanced game',
+      'Little cash, greedy rivals, pricey rent, fakes get returned more often',
+    ].map(tr).toList();
+List<String> get textSizeNames => ['Small', 'Normal', 'Large'].map(tr).toList();
 
 class AppSettings extends ChangeNotifier {
   static const _key = 'lost_luggage_settings_v1';
@@ -44,6 +46,7 @@ class AppSettings extends ChangeNotifier {
   String storeName = '';
   Set<String> seenTips = {};
   bool onboarded = false;
+  String lang = 'en';
 
   ThemeMode get themeMode => const [ThemeMode.system, ThemeMode.light, ThemeMode.dark][theme];
   Color get seed => accentSeeds[accent.clamp(0, accentSeeds.length - 1).toInt()];
@@ -53,7 +56,7 @@ class AppSettings extends ChangeNotifier {
   double get rentMult => const [0.7, 1.0, 1.3][difficulty];
   double get complaintChance => const [0.45, 0.65, 0.8][difficulty];
   int get startMoney => const [45000, 30000, 20000][difficulty];
-  String get storeTitle => storeName.trim().isEmpty ? 'My Warehouse' : storeName.trim();
+  String get storeTitle => storeName.trim().isEmpty ? tr('My Warehouse') : storeName.trim();
 
   bool showTip(String id) => tips && !seenTips.contains(id);
 
@@ -71,6 +74,13 @@ class AppSettings extends ChangeNotifier {
   void set(void Function(AppSettings s) f) {
     f(this);
     changed();
+  }
+
+  void setLang(String code) {
+    if (code == lang) return;
+    lang = code;
+    changed();
+    rebuildAllWidgets();
   }
 
   void tap() {
@@ -98,13 +108,17 @@ class AppSettings extends ChangeNotifier {
         'name': storeName,
         'seen': seenTips.toList(),
         'onb': onboarded,
+        'lang': lang,
       };
 
   Future<void> load() async {
     try {
       final p = await SharedPreferences.getInstance();
       final s = p.getString(_key);
-      if (s == null) return;
+      if (s == null) {
+        lang = systemLanguage();
+        return;
+      }
       final j = jsonDecode(s) as Map<String, dynamic>;
       int gi(String k, int d) => j[k] is num ? (j[k] as num).toInt() : d;
       theme = gi('theme', 0).clamp(0, 2).toInt();
@@ -118,8 +132,11 @@ class AppSettings extends ChangeNotifier {
       storeName = (j['name'] as String?) ?? '';
       seenTips = ((j['seen'] as List?) ?? const []).map((e) => e.toString()).toSet();
       onboarded = j['onb'] == true;
+      final l = j['lang'];
+      lang = l is String && languageCodes.contains(l) ? l : systemLanguage();
     } catch (e) {
       debugPrint('settings load failed: $e');
+      lang = systemLanguage();
     }
   }
 

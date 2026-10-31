@@ -141,7 +141,6 @@ jobs:
           curl -sL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
           unzip -q butler.zip -d butler && chmod +x butler/butler
           ./butler/butler push out/lost-luggage-${{ github.run_number }}.apk "$ITCH_GAME:android" --userversion "$APP_VERSION.${{ github.run_number }}"
-          ./butler/butler push build/web "$ITCH_GAME:web" --userversion "$APP_VERSION.${{ github.run_number }}"
 
       - name: Post build log to issue
         if: always()
